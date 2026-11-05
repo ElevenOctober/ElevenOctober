@@ -37,7 +37,8 @@ function poseAt(progress: number, mobile: boolean) {
     rotation: lerp(poses[index].rotation, poses[index + 1].rotation, fraction),
   }
   if (mobile) return { ...pose, x: 0, y: pose.y - 2.1, z: pose.z + 0.8 }
-  return pose
+  const homeOffset = 1 - clamp(progress / 0.14, 0, 1)
+  return { ...pose, x: pose.x - homeOffset * 0.65, y: pose.y - homeOffset * 1.25 }
 }
 
 export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement, projectSlugs: string[]) {
