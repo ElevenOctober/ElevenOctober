@@ -50,7 +50,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         <div className="article-content"><article.Content /></div>
         {article.repository && <p className="article-source"><span>REPOSITORY</span> <a href={article.repository} target="_blank" rel="noreferrer">Open project repository ↗</a></p>}
         {article.sources.length > 0 && <section className="article-references"><h2>References</h2><ol>{article.sources.map((source) => <li key={source.url}><a href={source.url} target="_blank" rel="noreferrer">{source.title}</a></li>)}</ol></section>}
-        {article.revisions.length > 0 && <section className="article-references"><h2>Revision history</h2><ol>{article.revisions.map((revision) => <li key={revision.date}><time dateTime={revision.date}>{revision.date}</time> — {revision.note}</li>)}</ol></section>}
+        {article.revisions.length > 0 && <section className="article-references"><h2>Revision history</h2><ol>{article.revisions.map((revision) => <li key={revision.date}><time dateTime={revision.date}>{revision.date}</time>: {revision.note}</li>)}</ol></section>}
         <Link className="text-action document-back" href="/articles">Back to articles <span aria-hidden="true">↗</span></Link>
       </article>
       <footer className="document-footer"><span>11 OCTOBER</span><span>OPEN ENGINEERING ARTICLES</span></footer>

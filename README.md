@@ -43,10 +43,10 @@ Nothing in the site is presented as a real community problem or completed projec
 
 ## Structure
 
-- `app/` — homepage, problem/project/article routes, metadata, and sitemap.
-- `components/` — navigation, the WebGL stage, and reveal motion.
-- `content/` — local, pull-request-friendly records; no external CMS.
-- `lib/orbit-scene.ts` — custom Three.js eclipse, scroll-linked camera, pointer response, and WebGL fallback.
-- `types/` — problem, project, and article content models.
+- `app/`: homepage, problem/project/article routes, metadata, and sitemap.
+- `components/`: navigation, the WebGL stage, and reveal motion.
+- `content/`: local, pull-request-friendly records; no external CMS.
+- `lib/orbit-scene.ts`: custom Three.js eclipse, scroll-linked camera, pointer response, and WebGL fallback.
+- `types/`: problem, project, and article content models.
 
 The WebGL scene uses no model downloads or image textures. It caps pixel ratio, simplifies particles and antialiasing on mobile, pauses when the tab is hidden, and respects reduced motion. The page keeps all core copy and links in HTML; a CSS eclipse remains visible if WebGL initialization fails. IBM Plex Sans is bundled locally under the SIL Open Font License; its notice is in `app/fonts/OFL.txt`.
