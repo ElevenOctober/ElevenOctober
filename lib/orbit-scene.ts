@@ -65,22 +65,48 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   scene.add(system)
 
   const coreMaterial = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 } },
     vertexShader: `
       varying vec3 vNormal;
       varying vec3 vView;
+      varying vec3 vLocalPosition;
       void main() {
         vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
         vNormal = normalize(normalMatrix * normal);
         vView = normalize(-viewPosition.xyz);
+        vLocalPosition = normalize(position);
         gl_Position = projectionMatrix * viewPosition;
       }
     `,
     fragmentShader: `
+      uniform float uTime;
       varying vec3 vNormal;
       varying vec3 vView;
+      varying vec3 vLocalPosition;
+      float cloudHash(vec3 p) {
+        p = fract(p * 0.3183099 + vec3(0.1));
+        p *= 17.0;
+        return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+      }
+      float cloudNoise(vec3 p) {
+        vec3 i = floor(p);
+        vec3 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(
+          mix(mix(cloudHash(i), cloudHash(i + vec3(1.0, 0.0, 0.0)), f.x), mix(cloudHash(i + vec3(0.0, 1.0, 0.0)), cloudHash(i + vec3(1.0, 1.0, 0.0)), f.x), f.y),
+          mix(mix(cloudHash(i + vec3(0.0, 0.0, 1.0)), cloudHash(i + vec3(1.0, 0.0, 1.0)), f.x), mix(cloudHash(i + vec3(0.0, 1.0, 1.0)), cloudHash(i + vec3(1.0, 1.0, 1.0)), f.x), f.y),
+          f.z
+        );
+      }
       void main() {
         float edge = pow(1.0 - max(dot(normalize(vNormal), normalize(vView)), 0.0), 4.2);
-        vec3 base = vec3(0.008, 0.0075, 0.0068);
+        vec3 position = normalize(vLocalPosition);
+        vec3 drift = vec3(0.0, uTime * 0.014, -uTime * 0.01);
+        float broadClouds = cloudNoise(position * 3.4 + drift);
+        float cloudWisps = cloudNoise(position * 9.0 + drift * 1.8);
+        float cloudField = broadClouds * 0.72 + cloudWisps * 0.28;
+        float clouds = smoothstep(0.44, 0.66, cloudField) * 0.34;
+        vec3 base = mix(vec3(0.008, 0.0075, 0.0068), vec3(0.09, 0.078, 0.064), clouds);
         vec3 rim = vec3(0.16, 0.135, 0.095) * edge * 0.38;
         gl_FragColor = vec4(base + rim, 1.0);
       }
@@ -125,10 +151,27 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   const trail = new THREE.Line(trailGeometry, trailMaterial)
   orbit.add(trail)
 
-  const markerMaterial = new THREE.MeshBasicMaterial({ color: '#f2ecdf', toneMapped: false })
-  const marker = new THREE.Mesh(new THREE.SphereGeometry(0.047, 20, 16), markerMaterial)
+  const marker = new THREE.Group()
+  const markerBody = new THREE.Mesh(
+    new THREE.BoxGeometry(0.065, 0.055, 0.055),
+    new THREE.MeshStandardMaterial({ color: '#ded0b0', metalness: 0.58, roughness: 0.38, emissive: '#382c19', emissiveIntensity: 0.2 }),
+  )
+  marker.add(markerBody)
+  const panelMaterial = new THREE.MeshStandardMaterial({ color: '#7b858b', metalness: 0.35, roughness: 0.52, emissive: '#30383c', emissiveIntensity: 0.35 })
+  const panelGridMaterial = new THREE.MeshStandardMaterial({ color: '#b5a582', metalness: 0.65, roughness: 0.4 })
+  for (const side of [-1, 1]) {
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.075, 0.01), panelMaterial)
+    panel.position.x = side * 0.11
+    marker.add(panel)
+    const panelGrid = new THREE.Mesh(new THREE.BoxGeometry(0.004, 0.08, 0.012), panelGridMaterial)
+    panelGrid.position.x = side * 0.12
+    marker.add(panelGrid)
+  }
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.012, 10, 8), new THREE.MeshBasicMaterial({ color: '#f2ecdf', toneMapped: false }))
+  beacon.position.y = 0.037
+  marker.add(beacon)
   orbit.add(marker)
-  const markerLight = new THREE.PointLight('#eee3cc', 1.5, 1.25, 2)
+  const markerLight = new THREE.PointLight('#eee3cc', 0.8, 0.9, 2)
   markerLight.position.set(2.12, 0, 0)
   orbit.add(markerLight)
 
@@ -352,6 +395,7 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   fitStarField()
 
   const sections = Array.from(document.querySelectorAll<HTMLElement>('section[data-scene-index]'))
+  const cover = shell.querySelector<HTMLElement>('.world-cover')
   const raycaster = new THREE.Raycaster()
   raycaster.params.Line = { threshold: 0.09 }
   const pointer = new THREE.Vector2(10, 10)
@@ -406,10 +450,12 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     lastFrame = now
 
     const elapsed = (now - startedAt) / 1000
+    coreMaterial.uniforms.uTime.value = reducedMotion ? 0 : elapsed
     const intro = reducedMotion ? 1 : clamp(elapsed / 2.2, 0, 1)
     orbitLine.geometry.setDrawRange(0, Math.max(1, Math.floor(480 * intro)))
     glowMaterial.opacity = lerp(glowMaterial.opacity, 0.08 + glow * 0.12, 0.08)
     scrollProgress = reducedMotion ? 0 : readStoryProgress(sections)
+    if (cover) cover.style.opacity = String(0.9 * (1 - clamp(window.scrollY / Math.max(1, sections[0]?.offsetHeight ?? window.innerHeight), 0, 1)))
     orbit.rotation.x = lerp(orbit.rotation.x, -1.08 + Math.sin(scrollProgress * Math.PI * 0.5) * 0.1, 0.045)
     const pose = poseAt(scrollProgress, mobile)
 
@@ -432,8 +478,9 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
       group.rotation.z = angle + Math.PI * 0.5
     })
 
-    const angle = 0.62 + intro * Math.PI * 2 + (reducedMotion ? 0 : elapsed * 0.12 + scrollProgress * 1.1)
+    const angle = Math.PI * 1.5 + intro * Math.PI * 2 + (reducedMotion ? 0 : elapsed * 0.12 + scrollProgress * 1.1)
     marker.position.set(Math.cos(angle) * 2.12, Math.sin(angle) * 2.12, 0)
+    marker.rotation.z = angle + Math.PI * 0.5
     markerLight.position.copy(marker.position)
     particleData.forEach((particle, index) => {
       const rock = rockData[particle.rock]

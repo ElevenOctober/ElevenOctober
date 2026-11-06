@@ -28,6 +28,7 @@ export default function OrbitWorld({ projectSlugs }: { projectSlugs: string[] })
         <div className="world-fallback__eclipse"><span /></div>
       </div>
       <canvas className="world-canvas" ref={canvas} />
+      <div className="world-cover" />
     </div>
   )
 }
