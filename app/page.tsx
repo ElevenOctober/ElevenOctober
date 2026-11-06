@@ -25,7 +25,7 @@ export default function Home() {
         <div className="hero-copy">
           <div className="hero-identity">
             <ContourField />
-            <h1 className="hero-wordmark">ELEVEN OCTOBER</h1>
+            <h1 className="hero-wordmark"><span className="hero-wordmark__initial">E</span>LEVEN <span className="hero-wordmark__initial">O</span>CTOBER</h1>
           </div>
         </div>
         <a className="scroll-cue" href="#orbit"><span aria-hidden="true" />SCROLL TO EXPLORE</a>

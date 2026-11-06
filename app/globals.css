@@ -30,8 +30,8 @@ button { font: inherit; }
 .world[data-ready="true"] .world-canvas { opacity: 1; }
 .world-fallback { display: grid; place-items: center; opacity: 1; transition: opacity 1.2s var(--ease-out); }
 .world[data-ready="true"] .world-fallback { opacity: 0; }
-.world-fallback__eclipse { position: absolute; left: 50%; top: 50%; width: min(54vw, 710px); aspect-ratio: 1; border: 1px solid rgba(213, 201, 173, 0.5); border-radius: 50%; transform: translate(-50%, -50%) rotate(-12deg) scaleY(0.52); filter: drop-shadow(0 0 12px rgba(213, 201, 173, 0.1)); }
-.world-fallback__eclipse::before { content: ""; position: absolute; inset: 12%; border-radius: 50%; background: #070706; transform: scaleY(1.92) rotate(12deg); }
+.world-fallback__eclipse { position: absolute; left: 50%; top: 50%; width: min(54vw, 710px); aspect-ratio: 1; border: 1px solid rgba(213, 201, 173, 0.5); border-radius: 50%; transform: translate(-50%, -50%) rotate(12deg) scaleY(0.52); filter: drop-shadow(0 0 12px rgba(213, 201, 173, 0.1)); }
+.world-fallback__eclipse::before { content: ""; position: absolute; inset: 12%; border-radius: 50%; background: #070706; transform: scaleY(1.92) rotate(-12deg); }
 .world-fallback__eclipse::after { content: ""; position: absolute; inset: -1px; border-radius: 50%; border: 1px solid rgba(213, 201, 173, 0.2); filter: blur(5px); }
 .world-fallback__eclipse span { position: absolute; z-index: 1; top: 0; left: 88%; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 14px rgba(234, 229, 220, 0.8); }
 
@@ -60,15 +60,13 @@ main::after { content: ""; position: fixed; z-index: 20; inset: 0; pointer-event
 .index-dialog nav a:hover { padding-left: 8px; color: var(--orbit); }
 .index-dialog nav a span:first-child, .index-dialog nav a span:last-child { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
 
-.hero { min-height: 100svh; justify-content: center; padding-top: 90px; padding-bottom: 80px; background: #040404; }
-.hero-copy { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: min(100%, 1180px); margin: 0; text-align: center; animation: hero-in 1100ms var(--ease-out) both; }
+.hero { position: relative; overflow: hidden; min-height: 100svh; justify-content: center; padding-top: 90px; padding-bottom: 80px; background: linear-gradient(180deg, rgba(4, 4, 4, 0.7) 0%, rgba(4, 4, 4, 0.7) 68%, rgba(4, 4, 4, 0) 100%); }
+.hero-copy { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: min(100%, 1180px); margin: 0; text-align: center; }
 .orbit-section { min-height: 100svh; }
-@keyframes hero-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 .hero-identity { position: relative; display: grid; place-items: center; width: 100%; height: clamp(320px, 65svh, 600px); }
-.contour-field { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.hero-wordmark { --wordmark-spacing: clamp(0.15em, 1.05vw, 0.22em); position: relative; z-index: 1; margin: 0; color: #e9e2d6; font-family: "Bodoni MT", Didot, "Times New Roman", serif; font-size: clamp(21px, 5vw, 76px); font-weight: 400; line-height: 1; letter-spacing: var(--wordmark-spacing); white-space: nowrap; opacity: 0; animation: wordmark-reveal 800ms var(--ease-out) 120ms forwards; transition: letter-spacing 900ms var(--ease-out); }
-.hero-wordmark:hover { letter-spacing: calc(var(--wordmark-spacing) + 0.02em); }
-@keyframes wordmark-reveal { to { opacity: 1; } }
+.contour-field { position: absolute; top: 0; left: 50%; z-index: 1; width: 100vw; height: 100%; transform: translateX(-50%); pointer-events: none; overflow: visible; filter: drop-shadow(0 0 4px rgba(213, 201, 173, 0.05)); }
+.hero-wordmark { --wordmark-spacing: clamp(0.1em, 0.75vw, 0.15em); position: relative; z-index: 2; margin: 0; color: #e9e2d6; font-family: "Bodoni MT", Didot, "Times New Roman", serif; font-size: clamp(23px, 5.5vw, 84px); font-weight: 400; line-height: 1; letter-spacing: var(--wordmark-spacing); white-space: nowrap; opacity: 1; animation: none; transition: none; }
+.hero-wordmark__initial { font-size: 1.1em; }
 .text-action { display: inline-flex; align-items: center; gap: 18px; padding: 8px 0; border: 0; border-bottom: 1px solid var(--line-strong); background: transparent; color: var(--ink); text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 0.16em; cursor: pointer; transition: gap 220ms var(--ease-out), color 180ms ease, border-color 180ms ease; }
 .text-action:hover { gap: 24px; border-color: var(--orbit); color: var(--orbit); }
 .text-action:active { transform: translateY(1px); }
@@ -197,7 +195,6 @@ main::after { content: ""; position: fixed; z-index: 20; inset: 0; pointer-event
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
-  .hero-wordmark { opacity: 1; animation: none; }
   .motion-ready [data-reveal] { opacity: 1; transform: none; }
 }
 
@@ -224,10 +221,10 @@ main::after { content: ""; position: fixed; z-index: 20; inset: 0; pointer-event
   .orbit-section { min-height: 100svh; }
   .hero-copy { width: 100%; margin: 0; }
   .hero-identity { height: clamp(300px, 60svh, 440px); }
-  .hero-wordmark { --wordmark-spacing: clamp(0.12em, 0.7vw, 0.17em); font-size: clamp(18px, 5.6vw, 30px); }
+  .hero-wordmark { --wordmark-spacing: clamp(0.08em, 0.5vw, 0.12em); font-size: clamp(20px, 6vw, 33px); }
   .hero-mark { top: auto; right: var(--page-gutter); bottom: 32px; writing-mode: horizontal-tb; }
   .scroll-cue { bottom: 32px; }
-  .world-fallback__eclipse { top: 50%; left: 50%; width: 130vw; transform: translate(-50%, -50%) rotate(-12deg) scaleY(0.5); }
+  .world-fallback__eclipse { top: 50%; left: 50%; width: 130vw; transform: translate(-50%, -50%) rotate(12deg) scaleY(0.5); }
   .scene-readout { font-size: 9px; }
   .about-section { min-height: 86svh; }
   .about-statement h2, .chapter-heading h2, .submit-intro h2, .join-layout h2 { font-size: clamp(37px, 10vw, 54px); }
