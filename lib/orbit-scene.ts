@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 type Pose = { x: number; y: number; z: number; rotation: number }
 
@@ -170,6 +171,45 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   rocks.frustumCulled = false
   if (rocks.instanceColor) rocks.instanceColor.needsUpdate = true
   debris.add(rocks)
+
+  let disposed = false
+  new GLTFLoader().load('/models/1999-rq36-asteroid.glb', ({ scene: model }) => {
+    if (disposed) return
+    model.updateMatrixWorld(true)
+    let source: THREE.Mesh | undefined
+    model.traverse((object) => {
+      if (!source && object instanceof THREE.Mesh) source = object
+    })
+    if (!source) return
+
+    const geometry = source.geometry.clone().applyMatrix4(source.matrixWorld)
+    geometry.computeBoundingBox()
+    const bounds = geometry.boundingBox
+    if (!bounds) {
+      geometry.dispose()
+      return
+    }
+    const center = bounds.getCenter(new THREE.Vector3())
+    const size = bounds.getSize(new THREE.Vector3())
+    const scale = 2 / Math.max(size.x, size.y, size.z)
+    geometry.translate(-center.x, -center.y, -center.z).scale(scale, scale, scale)
+    const modeledRocks = new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 }), rockCount)
+    modeledRocks.instanceMatrix.setUsage(THREE.StaticDrawUsage)
+    const color = new THREE.Color()
+    for (let index = 0; index < rockCount; index += 1) {
+      rocks.getMatrixAt(index, rockTransform.matrix)
+      modeledRocks.setMatrixAt(index, rockTransform.matrix)
+      rocks.getColorAt(index, color)
+      modeledRocks.setColorAt(index, color)
+    }
+    modeledRocks.instanceMatrix.needsUpdate = true
+    modeledRocks.instanceColor!.needsUpdate = true
+    modeledRocks.frustumCulled = false
+    debris.remove(rocks)
+    rocks.geometry.dispose()
+    rockMaterial.dispose()
+    debris.add(modeledRocks)
+  })
 
   scene.add(new THREE.AmbientLight('#b4aa96', 0.55))
   const rockLight = new THREE.DirectionalLight('#e9ddc4', 1.35)
@@ -364,6 +404,7 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   frameId = window.requestAnimationFrame(animate)
 
   return () => {
+    disposed = true
     window.cancelAnimationFrame(frameId)
     canvas.removeEventListener('webglcontextlost', onContextLost)
     canvas.removeEventListener('webglcontextrestored', onContextRestored)
