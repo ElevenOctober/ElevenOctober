@@ -88,7 +88,7 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   system.add(core)
 
   const orbit = new THREE.Group()
-  orbit.rotation.x = 1.08
+  orbit.rotation.x = -1.08
   orbit.rotation.y = -0.08
   system.add(orbit)
 
@@ -289,6 +289,7 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     orbitLine.geometry.setDrawRange(0, Math.max(1, Math.floor(480 * intro)))
     glowMaterial.opacity = lerp(glowMaterial.opacity, 0.08 + glow * 0.12, 0.08)
     scrollProgress = reducedMotion ? 0 : readStoryProgress(sections)
+    orbit.rotation.x = lerp(orbit.rotation.x, -1.08 + Math.sin(scrollProgress * Math.PI * 0.5) * 0.1, 0.045)
     const pose = poseAt(scrollProgress, mobile)
 
     const cameraDriftX = reducedMotion ? 0 : pointerX * 0.12
