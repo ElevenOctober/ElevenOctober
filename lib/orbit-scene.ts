@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 type Pose = { x: number; y: number; z: number; rotation: number }
@@ -158,13 +159,13 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     const x = Math.cos(angle) * radius
     const y = Math.sin(angle) * radius
     const z = (random() - 0.5) * 0.3
-    const size = 0.065 + random() * 0.06
+    const size = 0.075 + random() * 0.065
     rockTransform.position.set(x, y, z)
     rockTransform.rotation.set(random() * Math.PI, random() * Math.PI, random() * Math.PI)
     rockTransform.scale.set(size * (0.72 + random() * 0.5), size * (0.65 + random() * 0.5), size * (0.75 + random() * 0.5))
     rockTransform.updateMatrix()
     rocks.setMatrixAt(index, rockTransform.matrix)
-    rocks.setColorAt(index, new THREE.Color('#978a71').multiplyScalar(0.82 + random() * 0.18))
+    rocks.setColorAt(index, new THREE.Color('#b4a98f').multiplyScalar(0.88 + random() * 0.12))
     rockData.push({ x, y, z, size })
   }
   rocks.instanceMatrix.needsUpdate = true
@@ -173,7 +174,13 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   debris.add(rocks)
 
   let disposed = false
-  new GLTFLoader().load('/models/1999-rq36-asteroid.glb', ({ scene: model }) => {
+  const spacecraft = new THREE.Group()
+  spacecraft.rotation.x = -0.3
+  system.add(spacecraft)
+  const spacecraftData: Array<{ group: THREE.Group; radius: number; phase: number; speed: number }> = []
+  const dracoLoader = new DRACOLoader().setDecoderPath('/draco/')
+  const modelLoader = new GLTFLoader().setDRACOLoader(dracoLoader)
+  modelLoader.load('/models/eros.glb', ({ scene: model }) => {
     if (disposed) return
     model.updateMatrixWorld(true)
     let source: THREE.Mesh | undefined
@@ -193,7 +200,12 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     const size = bounds.getSize(new THREE.Vector3())
     const scale = 2 / Math.max(size.x, size.y, size.z)
     geometry.translate(-center.x, -center.y, -center.z).scale(scale, scale, scale)
-    const modeledRocks = new THREE.InstancedMesh(geometry, new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 1 }), rockCount)
+    const material = Array.isArray(source.material) ? source.material.map((entry) => entry.clone()) : source.material.clone()
+    const materials = Array.isArray(material) ? material : [material]
+    materials.forEach((entry) => {
+      if (entry instanceof THREE.MeshStandardMaterial) entry.color.set('#ffffff')
+    })
+    const modeledRocks = new THREE.InstancedMesh(geometry, material, rockCount)
     modeledRocks.instanceMatrix.setUsage(THREE.StaticDrawUsage)
     const color = new THREE.Color()
     for (let index = 0; index < rockCount; index += 1) {
@@ -210,6 +222,25 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     rockMaterial.dispose()
     debris.add(modeledRocks)
   })
+  const loadSpacecraft = (path: string, radius: number, phase: number, speed: number, size: number) => {
+    modelLoader.load(path, ({ scene: model }) => {
+      if (disposed) return
+      const centeredModel = new THREE.Group()
+      centeredModel.add(model)
+      centeredModel.updateMatrixWorld(true)
+      const bounds = new THREE.Box3().setFromObject(model)
+      const center = bounds.getCenter(new THREE.Vector3())
+      const dimensions = bounds.getSize(new THREE.Vector3())
+      centeredModel.position.copy(center).negate()
+      centeredModel.scale.setScalar(size / Math.max(dimensions.x, dimensions.y, dimensions.z))
+      const group = new THREE.Group()
+      group.add(centeredModel)
+      spacecraft.add(group)
+      spacecraftData.push({ group, radius, phase, speed })
+    })
+  }
+  loadSpacecraft('/models/near-shoemaker.glb', 1.9, Math.PI * 0.5, 0.085, 0.3)
+  loadSpacecraft('/models/deep-space-1.glb', 2.1, Math.PI * 1.5, -0.06, 0.26)
 
   scene.add(new THREE.AmbientLight('#b4aa96', 0.55))
   const rockLight = new THREE.DirectionalLight('#e9ddc4', 1.35)
@@ -349,6 +380,11 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     system.rotation.x = lerp(system.rotation.x, reducedMotion ? 0 : pointerY * 0.025, 0.035)
     dust.rotation.z = reducedMotion ? 0 : elapsed * 0.003
     debris.rotation.z = reducedMotion ? 0 : elapsed * 0.06
+    spacecraftData.forEach(({ group, radius, phase, speed }) => {
+      const angle = phase + (reducedMotion ? 0 : elapsed * speed)
+      group.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0)
+      group.rotation.z = angle + Math.PI * 0.5
+    })
 
     const angle = 0.62 + intro * Math.PI * 2 + (reducedMotion ? 0 : elapsed * 0.12 + scrollProgress * 1.1)
     marker.position.set(Math.cos(angle) * 2.12, Math.sin(angle) * 2.12, 0)
@@ -411,13 +447,26 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     window.removeEventListener('resize', resize)
     window.removeEventListener('pointermove', onPointerMove)
     window.removeEventListener('pointerleave', onPointerLeave)
+    const textures = new Set<THREE.Texture>()
+    const imageBitmaps = new Set<ImageBitmap>()
     scene.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.Line || object instanceof THREE.Points) {
         object.geometry.dispose()
         const materials = Array.isArray(object.material) ? object.material : [object.material]
-        materials.forEach((material) => material.dispose())
+        materials.forEach((material) => {
+          Object.values(material).forEach((value) => {
+            if (value instanceof THREE.Texture) textures.add(value)
+          })
+          material.dispose()
+        })
       }
     })
+    textures.forEach((texture) => {
+      if (typeof ImageBitmap !== 'undefined' && texture.image instanceof ImageBitmap) imageBitmaps.add(texture.image)
+      texture.dispose()
+    })
+    imageBitmaps.forEach((image) => image.close())
+    dracoLoader.dispose()
     renderer.dispose()
   }
 }
