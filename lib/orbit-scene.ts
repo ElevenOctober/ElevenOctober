@@ -176,9 +176,9 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   rockLight.position.set(-3, 4, 5)
   scene.add(rockLight)
 
-  const particleData: Array<{ rock: number; angle: number; radius: number; speed: number; phase: number; z: number }> = []
+  const particleData: Array<{ rock: number; angle: number; radius: number; speed: number; phase: number; z: number; brightness: number }> = []
   rockData.forEach((rock, rockIndex) => {
-    const count = mobile ? 3 : 4
+    const count = mobile ? 5 : 7
     for (let index = 0; index < count; index += 1) {
       particleData.push({
         rock: rockIndex,
@@ -187,15 +187,19 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
         speed: 0.14 + random() * 0.18,
         phase: random() * Math.PI * 2,
         z: (random() - 0.5) * rock.size * 1.4,
+        brightness: 0.52 + random() * 0.48,
       })
     }
   })
   const particlePositions = new Float32Array(particleData.length * 3)
+  const particleColors = new Float32Array(particleData.length * 3)
   const particleGeometry = new THREE.BufferGeometry()
   const particleAttribute = new THREE.BufferAttribute(particlePositions, 3).setUsage(THREE.DynamicDrawUsage)
+  const particleColorAttribute = new THREE.BufferAttribute(particleColors, 3).setUsage(THREE.DynamicDrawUsage)
   particleGeometry.setAttribute('position', particleAttribute)
+  particleGeometry.setAttribute('color', particleColorAttribute)
   const particles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({
-    color: '#d5c9ad', size: mobile ? 0.026 : 0.028, transparent: true, opacity: 0.5,
+    color: '#d5c9ad', vertexColors: true, size: mobile ? 0.026 : 0.028, transparent: true, opacity: 0.5,
     sizeAttenuation: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
   }))
   particles.frustumCulled = false
@@ -316,8 +320,13 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
       particlePositions[index * 3] = rock.x + Math.cos(angle) * particle.radius + drift
       particlePositions[index * 3 + 1] = rock.y + Math.sin(angle) * particle.radius - drift
       particlePositions[index * 3 + 2] = rock.z + particle.z + Math.sin(elapsed * 0.5 + particle.phase) * (reducedMotion ? 0 : 0.012)
+      const shimmer = particle.brightness * (reducedMotion ? 1 : 0.82 + Math.sin(elapsed * 1.4 + particle.phase) * 0.18)
+      particleColors[index * 3] = shimmer
+      particleColors[index * 3 + 1] = shimmer
+      particleColors[index * 3 + 2] = shimmer
     })
     particleAttribute.needsUpdate = true
+    particleColorAttribute.needsUpdate = true
     const trailLength = 0.22 + scrollProgress * 6.06
     for (let index = 0; index <= 96; index += 1) {
       const trailAngle = angle - (index / 96) * trailLength
