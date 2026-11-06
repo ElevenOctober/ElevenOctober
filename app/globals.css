@@ -60,14 +60,15 @@ main::after { content: ""; position: fixed; z-index: 20; inset: 0; pointer-event
 .index-dialog nav a:hover { padding-left: 8px; color: var(--orbit); }
 .index-dialog nav a span:first-child, .index-dialog nav a span:last-child { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 12px; letter-spacing: 0.12em; }
 
-.hero { min-height: 100svh; justify-content: center; padding-top: 90px; padding-bottom: 80px; background: var(--ground); }
+.hero { min-height: 100svh; justify-content: center; padding-top: 90px; padding-bottom: 80px; background: radial-gradient(ellipse at 50% 48%, #090807 0%, #040404 76%); }
 .hero-copy { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; width: min(100%, 1180px); margin: 0; text-align: center; animation: hero-in 1100ms var(--ease-out) both; }
 .orbit-section { min-height: 100svh; }
 @keyframes hero-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-.hero-identity { position: relative; display: grid; place-items: center; width: 100%; height: clamp(280px, 55svh, 600px); }
+.hero-identity { position: relative; display: grid; place-items: center; width: 100%; height: clamp(320px, 65svh, 600px); }
 .contour-field { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.hero-wordmark { --wordmark-spacing: clamp(0.12em, 1.1vw, 0.28em); position: relative; z-index: 1; margin: 0; color: #eee7da; font-family: "Bodoni MT", Didot, "Times New Roman", serif; font-size: clamp(25px, 7vw, 92px); font-weight: 400; line-height: 1; letter-spacing: var(--wordmark-spacing); white-space: nowrap; text-shadow: 0 0 8px var(--ground), 0 0 24px rgba(5, 5, 5, 0.85); opacity: 0; animation: wordmark-reveal 1s var(--ease-out) 1.8s forwards; transition: letter-spacing 900ms var(--ease-out); }
-.hero-wordmark:hover { letter-spacing: calc(var(--wordmark-spacing) + 0.02em); }
+.hero-wordmark { --wordmark-spacing: clamp(0.15em, 1.05vw, 0.24em); position: relative; z-index: 1; margin: 0; color: #eae3d8; font-family: "Bodoni MT", Didot, "Times New Roman", serif; font-size: clamp(21px, 4vw, 64px); font-weight: 400; line-height: 1; letter-spacing: var(--wordmark-spacing); white-space: nowrap; text-shadow: 0 0 8px var(--ground), 0 0 24px rgba(5, 5, 5, 0.85); opacity: 0; animation: wordmark-reveal 1s var(--ease-out) 1.8s forwards; transition: letter-spacing 900ms var(--ease-out), text-shadow 900ms var(--ease-out); }
+.hero-wordmark:hover { letter-spacing: calc(var(--wordmark-spacing) + 0.02em); text-shadow: 0 0 12px rgba(234, 227, 216, 0.3), 0 0 28px rgba(5, 5, 5, 0.85); }
+.contour-line--highlight { filter: drop-shadow(0 0 2px rgba(210, 194, 165, 0.2)); }
 @keyframes wordmark-reveal { to { opacity: 1; } }
 .text-action { display: inline-flex; align-items: center; gap: 18px; padding: 8px 0; border: 0; border-bottom: 1px solid var(--line-strong); background: transparent; color: var(--ink); text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 0.16em; cursor: pointer; transition: gap 220ms var(--ease-out), color 180ms ease, border-color 180ms ease; }
 .text-action:hover { gap: 24px; border-color: var(--orbit); color: var(--orbit); }
@@ -223,8 +224,8 @@ main::after { content: ""; position: fixed; z-index: 20; inset: 0; pointer-event
   .hero { min-height: 100svh; align-items: center; padding-top: 90px; padding-bottom: 80px; }
   .orbit-section { min-height: 100svh; }
   .hero-copy { width: 100%; margin: 0; }
-  .hero-identity { height: clamp(260px, 50svh, 380px); }
-  .hero-wordmark { --wordmark-spacing: clamp(0.1em, 0.85vw, 0.18em); font-size: clamp(22px, 6.4vw, 36px); }
+  .hero-identity { height: clamp(300px, 60svh, 440px); }
+  .hero-wordmark { --wordmark-spacing: clamp(0.12em, 0.7vw, 0.17em); font-size: clamp(18px, 5.6vw, 30px); }
   .hero-mark { top: auto; right: var(--page-gutter); bottom: 32px; writing-mode: horizontal-tb; }
   .scroll-cue { bottom: 32px; }
   .world-fallback__eclipse { top: 50%; left: 50%; width: 130vw; transform: translate(-50%, -50%) rotate(-12deg) scaleY(0.5); }
