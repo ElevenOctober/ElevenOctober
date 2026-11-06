@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import ContourField from '@/components/contour-field'
 import OrbitWorld from '@/components/orbit-world'
 import RevealManager from '@/components/reveal-manager'
 import SiteHeader from '@/components/site-header'
@@ -22,16 +23,21 @@ export default function Home() {
 
       <section id="home" className="story-section hero" data-scene-index="0">
         <div className="hero-copy">
-          <h1><span className="hero-number">11</span><span className="hero-month"><span className="hero-month__o">O</span><span className="hero-month__rest">CTOBER</span></span></h1>
-          <p className="hero-kind">AN OPEN ENGINEERING COLLECTIVE</p>
-          <p className="hero-description">We build practical solutions around real needs.</p>
-          <a className="text-action hero-action" href="#about">Explore the work <span aria-hidden="true">↘</span></a>
+          <div className="hero-identity">
+            <ContourField />
+            <h1 className="hero-wordmark">ELEVEN OCTOBER</h1>
+          </div>
         </div>
-        <a className="scroll-cue" href="#about"><span aria-hidden="true" />SCROLL TO EXPLORE</a>
+        <a className="scroll-cue" href="#orbit"><span aria-hidden="true" />SCROLL TO EXPLORE</a>
+      </section>
+
+      <section id="orbit" className="story-section orbit-section" data-scene-index="1" aria-labelledby="orbit-title">
+        <h2 id="orbit-title" className="visually-hidden">The orbit</h2>
+        <a className="scroll-cue" href="#about"><span aria-hidden="true" />CONTINUE</a>
         <span className="hero-mark" aria-hidden="true">THE ORBIT</span>
       </section>
 
-      <section id="about" className="story-section about-section" data-scene-index="1">
+      <section id="about" className="story-section about-section" data-scene-index="2">
         <div className="section-shell about-layout">
           <div className="about-statement" data-reveal>
             <h2>Engineering begins by listening.</h2>
@@ -44,7 +50,7 @@ export default function Home() {
         <div className="orbit-caption" aria-hidden="true"><span className="caption-point" />A PROBLEM ENTERS THE SYSTEM</div>
       </section>
 
-      <section id="problems" className="story-section problems-section" data-scene-index="2">
+      <section id="problems" className="story-section problems-section" data-scene-index="3">
         <div className="section-shell">
           <div className="chapter-heading" data-reveal>
             <span className="section-index">01 / PROBLEMS</span>
@@ -74,7 +80,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="engineering" className="story-section engineering-section" data-scene-index="3">
+      <section id="engineering" className="story-section engineering-section" data-scene-index="4">
         <div className="section-shell engineering-layout">
           <div className="chapter-heading" data-reveal>
             <span className="section-index">02 / METHOD</span>
@@ -92,7 +98,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="solutions" className="story-section solutions-section" data-scene-index="4">
+      <section id="solutions" className="story-section solutions-section" data-scene-index="5">
         <div className="section-shell solutions-layout">
           <div className="chapter-heading" data-reveal>
             <span className="section-index">03 / SOLUTIONS</span>
@@ -112,7 +118,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="articles" className="story-section articles-section" data-scene-index="5">
+      <section id="articles" className="story-section articles-section" data-scene-index="6">
         <div className="section-shell articles-layout">
           <div className="chapter-heading" data-reveal>
             <span className="section-index">04 / OPEN ARTICLES</span>
@@ -130,7 +136,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="submit" className="story-section submit-section" data-scene-index="6">
+      <section id="submit" className="story-section submit-section" data-scene-index="7">
         <div className="section-shell submit-layout">
           <div className="submit-intro" data-reveal>
             <span className="section-index">05 / GITHUB ISSUES</span>
@@ -149,7 +155,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="join" className="story-section join-section" data-scene-index="7">
+      <section id="join" className="story-section join-section" data-scene-index="8">
         <div className="section-shell join-layout">
           <div data-reveal>
             <span className="section-index">06 / JOIN</span>
@@ -166,7 +172,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="site-footer" data-scene-index="7">
+      <footer className="site-footer" data-scene-index="8">
         <div className="footer-top"><a className="footer-index" href="#home">BACK TO ARRIVAL ↑</a><span>AN OPEN ENGINEERING COLLECTIVE</span></div>
         <p>11 OCTOBER</p>
         <div className="footer-bottom"><span>REAL PROBLEMS. OPEN ENGINEERING.</span><a href="#home">RETURN TO THE ORBIT ↑</a></div>

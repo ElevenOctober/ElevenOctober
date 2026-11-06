@@ -5,13 +5,14 @@ import Link from 'next/link'
 
 const indexItems = [
   ['00', 'HOME', '#home'],
-  ['01', 'ABOUT', '#about'],
-  ['02', 'PROBLEMS', '#problems'],
-  ['03', 'ENGINEERING', '#engineering'],
-  ['04', 'SOLUTIONS', '#solutions'],
-  ['05', 'ARTICLES', '#articles'],
-  ['06', 'SUBMIT', '#submit'],
-  ['07', 'JOIN', '#join'],
+  ['01', 'ORBIT', '#orbit'],
+  ['02', 'ABOUT', '#about'],
+  ['03', 'PROBLEMS', '#problems'],
+  ['04', 'ENGINEERING', '#engineering'],
+  ['05', 'SOLUTIONS', '#solutions'],
+  ['06', 'ARTICLES', '#articles'],
+  ['07', 'SUBMIT', '#submit'],
+  ['08', 'JOIN', '#join'],
 ]
 
 export function SceneReadout() {
@@ -30,9 +31,11 @@ export function SceneReadout() {
     return () => observer.disconnect()
   }, [])
 
+  const lastIndex = String(indexItems.length - 1).padStart(2, '0')
+
   return (
-    <div className="scene-readout" aria-label={'Scene ' + String(active).padStart(2, '0') + ' of 07: ' + indexItems[active][1]}>
-      <span>{String(active).padStart(2, '0')} / 07</span>
+    <div className="scene-readout" aria-label={'Scene ' + String(active).padStart(2, '0') + ' of ' + lastIndex + ': ' + indexItems[active][1]}>
+      <span>{String(active).padStart(2, '0')} / {lastIndex}</span>
       <span>{indexItems[active][1]}</span>
     </div>
   )

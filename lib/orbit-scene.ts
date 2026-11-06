@@ -3,7 +3,8 @@ import * as THREE from 'three'
 type Pose = { x: number; y: number; z: number; rotation: number }
 
 const poses: Pose[] = [
-  { x: 1.55, y: 0.03, z: 8.3, rotation: 0.02 },
+  { x: 0, y: 0, z: 8.3, rotation: 0.02 },
+  { x: 0, y: 0, z: 8.3, rotation: 0.02 },
   { x: 1.05, y: 0.05, z: 8.4, rotation: 0.09 },
   { x: 0.62, y: -0.12, z: 8.6, rotation: 0.2 },
   { x: 0.08, y: 0.1, z: 8.8, rotation: 0.34 },
@@ -36,9 +37,8 @@ function poseAt(progress: number, mobile: boolean) {
     z: lerp(poses[index].z, poses[index + 1].z, fraction),
     rotation: lerp(poses[index].rotation, poses[index + 1].rotation, fraction),
   }
-  if (mobile) return { ...pose, x: 0, y: pose.y - 2.1, z: pose.z + 0.8 }
-  const homeOffset = 1 - clamp(progress / 0.14, 0, 1)
-  return { ...pose, x: pose.x - homeOffset * 0.65, y: pose.y - homeOffset * 1.25 }
+  if (mobile) return { ...pose, x: 0, y: pose.y - clamp((progress - 0.25) / 0.125, 0, 1) * 2.1, z: pose.z + 0.8 }
+  return pose
 }
 
 export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement, projectSlugs: string[]) {
