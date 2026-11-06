@@ -306,6 +306,51 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   const dust = new THREE.Points(dustGeometry, new THREE.PointsMaterial({ color: '#a39b88', size: mobile ? 0.012 : 0.014, transparent: true, opacity: 0.25, sizeAttenuation: true, depthWrite: false }))
   scene.add(dust)
 
+  const starCount = mobile ? 220 : 480
+  const starPositions = new Float32Array(starCount * 3)
+  const starColors = new Float32Array(starCount * 3)
+  const brightStarPositions: number[] = []
+  for (let index = 0; index < starCount; index += 1) {
+    const offset = index * 3
+    const brightness = 0.45 + Math.pow(random(), 1.6) * 0.55
+    const x = random() * 2 - 1
+    const y = random() * 2 - 1
+    starPositions[offset] = x
+    starPositions[offset + 1] = y
+    starColors[offset] = brightness
+    starColors[offset + 1] = brightness * 0.94
+    starColors[offset + 2] = brightness * 0.82
+    if (brightness > 0.94) brightStarPositions.push(x, y, 0)
+  }
+  const starGeometry = new THREE.BufferGeometry()
+  starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3))
+  starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3))
+  const stars = new THREE.Points(starGeometry, new THREE.PointsMaterial({
+    vertexColors: true, size: 0.08, transparent: true, opacity: 0.88, sizeAttenuation: true,
+    depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  }))
+  const brightStarGeometry = new THREE.BufferGeometry()
+  brightStarGeometry.setAttribute('position', new THREE.Float32BufferAttribute(brightStarPositions, 3))
+  const brightStars = new THREE.Points(brightStarGeometry, new THREE.PointsMaterial({
+    color: '#e9d9b5', size: 0.12, transparent: true, opacity: 0.94, sizeAttenuation: true,
+    depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  }))
+  stars.position.z = -32
+  brightStars.position.z = -32
+  stars.frustumCulled = false
+  brightStars.frustumCulled = false
+  camera.add(stars)
+  camera.add(brightStars)
+  scene.add(camera)
+  const fitStarField = () => {
+    const height = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 32
+    const scaleX = (height * camera.aspect) / 2
+    const scaleY = height / 2
+    stars.scale.set(scaleX, scaleY, 1)
+    brightStars.scale.set(scaleX, scaleY, 1)
+  }
+  fitStarField()
+
   const sections = Array.from(document.querySelectorAll<HTMLElement>('section[data-scene-index]'))
   const raycaster = new THREE.Raycaster()
   raycaster.params.Line = { threshold: 0.09 }
@@ -350,6 +395,7 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     const compact = width <= 700
     camera.aspect = width / height
     camera.updateProjectionMatrix()
+    fitStarField()
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, compact ? 1.25 : 1.75))
     renderer.setSize(width, height, false)
   }
