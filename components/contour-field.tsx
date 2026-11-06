@@ -2,29 +2,25 @@
 
 import { useEffect, useRef } from 'react'
 
-const upperY = [265, 245, 225, 205, 185, 165, 145, 125, 105, 85]
-const lowerY = [435, 455, 475, 495, 515, 535, 555, 575, 595, 615]
-const lineOpacity = [0.44, 0.38, 0.33, 0.28, 0.22, 0.17, 0.13, 0.1, 0.07, 0.05]
-const highlighted = new Set([2, 5, 12, 16])
-const samples = 120
+const contourIndices = Array.from({ length: 22 }, (_, index) => index - 11)
+const highlightIndices = new Set([-1, 0, 1])
+const fieldWidth = 1600
+const fieldHeight = 700
+const samples = 144
 
-function smoothNoise(value: number) {
-  const left = Math.floor(value)
-  const fraction = value - left
-  const blend = fraction * fraction * (3 - 2 * fraction)
-  const hash = (seed: number) => {
-    const result = Math.sin(seed * 127.1 + 19.19) * 43758.5453
-    return (result - Math.floor(result)) * 2 - 1
-  }
-  return hash(left) * (1 - blend) + hash(left + 1) * blend
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
+
+function gaussian(value: number, center: number, width: number) {
+  const distance = (value - center) / width
+  return Math.exp(-0.5 * distance * distance)
 }
 
 function splinePath(x: Float32Array, y: Float32Array) {
   let path = `M ${x[0]} ${y[0]}`
-  for (let i = 0; i < x.length - 1; i++) {
-    const before = Math.max(0, i - 1)
-    const after = Math.min(x.length - 1, i + 2)
-    path += ` C ${x[i] + (x[i + 1] - x[before]) / 6} ${y[i] + (y[i + 1] - y[before]) / 6}, ${x[i + 1] - (x[after] - x[i]) / 6} ${y[i + 1] - (y[after] - y[i]) / 6}, ${x[i + 1]} ${y[i + 1]}`
+  for (let index = 0; index < x.length - 1; index++) {
+    const before = Math.max(0, index - 1)
+    const after = Math.min(x.length - 1, index + 2)
+    path += ` C ${x[index] + (x[index + 1] - x[before]) / 6} ${y[index] + (y[index + 1] - y[before]) / 6}, ${x[index + 1] - (x[after] - x[index]) / 6} ${y[index + 1] - (y[after] - y[index]) / 6}, ${x[index + 1]} ${y[index + 1]}`
   }
   return path
 }
@@ -35,32 +31,22 @@ export default function ContourField() {
   useEffect(() => {
     const svg = svgRef.current
     const root = svg?.parentElement
-    if (!root || !svg) return
+    if (!svg || !root) return
 
-    const lines = [...upperY, ...lowerY].map((baseline, index) => {
-      const localIndex = index % 10
-      const upper = index < 10
-      const start = 140 + (index * 37) % 120
-      const end = 1400 + (index * 29) % 75
-      const x = Float32Array.from({ length: samples }, (_, point) => start + (end - start) * point / (samples - 1))
-      const y = new Float32Array(samples)
-      const path = svg.querySelector<SVGPathElement>(`[data-contour="${index}"]`)
-      const stops = highlighted.has(index)
-        ? [...svg.querySelectorAll<SVGStopElement>(`#contour-highlight-${index} stop`)]
-        : []
+    const lines = contourIndices.map((contourIndex, index) => {
+      const start = 42 + (index * 31) % 82
+      const end = 1476 + (index * 29) % 68
+      const normalized = contourIndex / 11
       return {
-        baseline,
-        upper,
-        phase: index * 0.12,
-        amplitude: 1 + (localIndex - 4.5) * 0.008,
-        alpha: lineOpacity[localIndex],
-        x,
-        y,
-        path,
-        stops,
+        normalized,
+        phase: normalized * 0.7,
+        opacity: 0.06 + (1 - Math.abs(normalized)) * 0.24,
+        x: Float32Array.from({ length: samples }, (_, point) => start + (end - start) * point / (samples - 1)),
+        y: new Float32Array(samples),
+        path: svg.querySelector<SVGPathElement>(`[data-contour="${contourIndex}"]`),
       }
     }).filter((line) => line.path)
-
+    const highlightStops = [...svg.querySelectorAll<SVGStopElement>('#contour-highlight stop')]
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const pointer = { x: 800, y: 350, targetX: 800, targetY: 350, active: false, leftAt: 0 }
     let frame = 0
@@ -81,105 +67,105 @@ export default function ContourField() {
       pointer.leftAt = performance.now()
     }
 
-    if (!reducedMotion) {
-      root.addEventListener('pointermove', onPointerMove)
-      root.addEventListener('pointerleave', onPointerLeave)
-    }
-
     const render = (now: number) => {
-      const delta = Math.min((now - previous) / 1000, 0.05)
+      elapsed += Math.min((now - previous) / 1000, 0.05)
       previous = now
-      elapsed += delta
-      const upperCenter = 930 + Math.sin(elapsed * 0.09) * 100
-      const lowerCenter = 690 + Math.sin(elapsed * 0.065 + 1.7) * 80
-      const upperAmplitude = 110 + Math.sin(elapsed * 0.11) * 15
-      const lowerAmplitude = 95 + Math.sin(elapsed * 0.08 + 2) * 12
+      const primaryCenter = 0.43 + Math.sin(elapsed * 0.19) * 0.05
+      const secondaryCenter = 0.7 + Math.sin(elapsed * 0.15 + 2.1) * 0.04
+      const highlightCenter = 0.5 + Math.sin(elapsed * 0.05 + 0.8) * 0.22
       pointer.x += (pointer.targetX - pointer.x) * 0.06
       pointer.y += (pointer.targetY - pointer.y) * 0.06
       const pointerFade = pointer.active ? 1 : Math.max(0, 1 - (now - pointer.leftAt) / 1200)
-      const highlightCenter = 0.5 + Math.sin(elapsed * 0.07) * 0.3
 
-      for (let index = 0; index < lines.length; index++) {
-        const line = lines[index]
-        const center = line.upper ? upperCenter : lowerCenter
-        const amplitude = (line.upper ? upperAmplitude : lowerAmplitude) * line.amplitude
-        const width = line.upper ? 470 : 520
-
+      for (const line of lines) {
         for (let point = 0; point < samples; point++) {
           const x = line.x[point]
-          const distance = x - center
-          const bulge = amplitude * Math.exp(-(distance * distance) / (2 * width * width))
-          const wave = Math.sin(x * 0.003 + elapsed * 0.18 + line.phase) * 10
-          const noise = smoothNoise(x * 0.0015 + elapsed * 0.025 + line.phase * 0.08) * 7
-          const direction = line.upper ? -1 : 1
-          const base = line.baseline + direction * bulge + wave + noise
-          const pointerDistance = Math.hypot(x - pointer.x, base - pointer.y)
-          const force = pointerFade * Math.exp(-(pointerDistance * pointerDistance) / (2 * 220 * 220))
-          const towardPointer = Math.max(-28, Math.min(28, (pointer.y - base) * 0.12))
-          line.y[point] = base + towardPointer * force
+          const nx = x / fieldWidth
+          const centerY = fieldHeight * 0.5
+            + 24 * Math.sin(nx * Math.PI * 1.55 + elapsed * 0.08)
+            - 16 * Math.sin(nx * Math.PI * 3.2 - elapsed * 0.045)
+          const spread = 15
+            + 115 * gaussian(nx, primaryCenter, 0.2)
+            + 55 * gaussian(nx, secondaryCenter, 0.16)
+            + 30 * gaussian(nx, 0.19, 0.11)
+          const asymmetry = line.normalized > 0 ? 1.34 : 1.38
+          const compression = 0.82 + 0.18 * Math.abs(line.normalized)
+          const twist = line.normalized * 18 * Math.sin(nx * Math.PI * 1.8 - elapsed * 0.07)
+          const detail = 4.5 * Math.sin(nx * Math.PI * 4 + line.phase + elapsed * 0.06)
+          const baseY = centerY + line.normalized * spread * asymmetry * compression + twist + detail
+          const distanceX = x - pointer.x
+          const distanceY = baseY - pointer.y
+          const force = pointerFade * Math.exp(-(distanceX * distanceX + distanceY * distanceY) / (2 * 210 * 210))
+          const displacement = clamp((pointer.y - baseY) * 0.12, -24, 24) * force
+          line.y[point] = baseY + displacement
         }
-
         line.path?.setAttribute('d', splinePath(line.x, line.y))
-        const reveal = reducedMotion ? 1 : Math.max(0, Math.min(1, (elapsed - index * 0.035) / 0.75))
-        line.path?.setAttribute('opacity', String(line.alpha * reveal))
-
-        if (line.stops.length) {
-          const localCenter = Math.max(0.24, Math.min(0.76, highlightCenter))
-          const offsets = [0, 0.08, 0.16, localCenter - 0.08, localCenter - 0.015, localCenter, localCenter + 0.015, localCenter + 0.08, 0.84, 0.92, 1]
-          line.stops.forEach((stop, stopIndex) => stop.setAttribute('offset', String(offsets[stopIndex])))
-        }
+        line.path?.setAttribute('opacity', String(line.opacity))
       }
 
-      if (!reducedMotion) frame = requestAnimationFrame(render)
+      if (highlightStops.length) {
+        const offsets = [0, 0.08, 0.16, highlightCenter - 0.11, highlightCenter - 0.025, highlightCenter, highlightCenter + 0.025, highlightCenter + 0.11, 0.84, 0.92, 1]
+        highlightStops.forEach((stop, index) => stop.setAttribute('offset', String(offsets[index])))
+      }
+      if (!reducedMotion && !document.hidden) frame = requestAnimationFrame(render)
     }
 
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        cancelAnimationFrame(frame)
+        frame = 0
+      } else if (!reducedMotion && !frame) {
+        previous = performance.now()
+        frame = requestAnimationFrame(render)
+      }
+    }
+
+    if (!reducedMotion) {
+      root.addEventListener('pointermove', onPointerMove)
+      root.addEventListener('pointerleave', onPointerLeave)
+      document.addEventListener('visibilitychange', onVisibilityChange)
+    }
     render(previous)
+
     return () => {
       cancelAnimationFrame(frame)
       root.removeEventListener('pointermove', onPointerMove)
       root.removeEventListener('pointerleave', onPointerLeave)
+      document.removeEventListener('visibilitychange', onVisibilityChange)
     }
   }, [])
 
   return (
-    <svg ref={svgRef} className="contour-field" viewBox="0 -50 1600 800" preserveAspectRatio="none" aria-hidden="true">
-        <defs>
-          <linearGradient id="contour-edge-fade" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
-            <stop offset="0" stopColor="#C9BDA9" stopOpacity="0" />
-            <stop offset="0.08" stopColor="#C9BDA9" stopOpacity="0.55" />
-            <stop offset="0.16" stopColor="#C9BDA9" />
-            <stop offset="0.84" stopColor="#C9BDA9" />
-            <stop offset="0.92" stopColor="#C9BDA9" stopOpacity="0.55" />
-            <stop offset="1" stopColor="#C9BDA9" stopOpacity="0" />
-          </linearGradient>
-          {Array.from(highlighted).map((index) => (
-            <linearGradient key={index} id={`contour-highlight-${index}`} x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
-              {[0, 0.08, 0.16, 0.42, 0.485, 0.5, 0.515, 0.58, 0.84, 0.92, 1].map((offset, stop) => (
-                <stop key={stop} offset={offset} stopColor="#D2C2A5" stopOpacity={[0, 0.55, 1, 0.08, 0.14, 0.55, 0.14, 0.08, 1, 0.55, 0][stop]} />
-              ))}
-            </linearGradient>
+    <svg ref={svgRef} className="contour-field" viewBox="0 0 1600 700" preserveAspectRatio="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="contour-edge-fade" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+          <stop offset="0" stopColor="#C6B79F" stopOpacity="0" />
+          <stop offset="0.08" stopColor="#C6B79F" stopOpacity="0.72" />
+          <stop offset="0.16" stopColor="#C6B79F" />
+          <stop offset="0.84" stopColor="#C6B79F" />
+          <stop offset="0.92" stopColor="#C6B79F" stopOpacity="0.72" />
+          <stop offset="1" stopColor="#C6B79F" stopOpacity="0" />
+        </linearGradient>
+        <linearGradient id="contour-highlight" x1="0" y1="0" x2="1" y2="0" gradientUnits="objectBoundingBox">
+          {[0, 0.08, 0.16, 0.39, 0.475, 0.5, 0.525, 0.61, 0.84, 0.92, 1].map((offset, index) => (
+            <stop key={index} offset={offset} stopColor={index >= 4 && index <= 6 ? '#D8C4A4' : '#C6B79F'} stopOpacity={[0, 0.72, 1, 1, 0.82, 1, 0.82, 1, 1, 0.72, 0][index]} />
           ))}
-          <filter id="contour-mask-soften" x="100" y="190" width="1400" height="320" filterUnits="userSpaceOnUse">
-            <feGaussianBlur stdDeviation="24" />
-          </filter>
-          <mask id="contour-text-mask" maskUnits="userSpaceOnUse" x="0" y="-50" width="1600" height="800">
-            <rect x="0" y="-50" width="1600" height="800" fill="white" />
-            <rect x="190" y="285" width="1220" height="130" fill="black" filter="url(#contour-mask-soften)" />
-          </mask>
-        </defs>
-        <g mask="url(#contour-text-mask)">
-          <g className="upper-field">
-            {upperY.map((_, index) => (
-              <path key={index} data-contour={index} className={highlighted.has(index) ? 'contour-line contour-line--highlight' : 'contour-line'} d="" fill="none" stroke={highlighted.has(index) ? `url(#contour-highlight-${index})` : 'url(#contour-edge-fade)'} strokeWidth="0.78" strokeLinecap="round" />
-            ))}
-          </g>
-          <g className="lower-field">
-            {lowerY.map((_, index) => {
-              const lineIndex = index + 10
-              return <path key={lineIndex} data-contour={lineIndex} className={highlighted.has(lineIndex) ? 'contour-line contour-line--highlight' : 'contour-line'} d="" fill="none" stroke={highlighted.has(lineIndex) ? `url(#contour-highlight-${lineIndex})` : 'url(#contour-edge-fade)'} strokeWidth="0.78" strokeLinecap="round" />
-            })}
-          </g>
-        </g>
+        </linearGradient>
+      </defs>
+      {contourIndices.map((contourIndex) => {
+        const normalized = contourIndex / 11
+        return (
+          <path
+            key={contourIndex}
+            data-contour={contourIndex}
+            d=""
+            fill="none"
+            stroke={highlightIndices.has(contourIndex) ? 'url(#contour-highlight)' : 'url(#contour-edge-fade)'}
+            strokeWidth={0.62 + (1 - Math.abs(normalized)) * 0.14}
+            strokeLinecap="round"
+          />
+        )
+      })}
     </svg>
   )
 }
