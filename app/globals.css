@@ -140,7 +140,7 @@ main::after { content: ""; position: fixed; z-index: 20; inset: 0; pointer-event
 .join-disciplines { display: flex; flex-wrap: wrap; gap: 4px 15px; max-width: 660px; padding-top: 12px; }
 .join-disciplines span { color: var(--muted); font-size: clamp(16px, 1.5vw, 20px); line-height: 1.75; }
 .join-disciplines span:not(:last-child)::after { content: " /"; color: var(--quiet); }
-.join-actions { grid-column: 1 / -1; display: flex; justify-content: center; gap: 34px; margin: 38vh 0 -38vh; }
+.join-actions { grid-column: 1 / -1; display: flex; justify-content: center; gap: 34px; margin: 36vh 0 -36vh; }
 
 .site-footer { position: relative; min-height: 52svh; padding: 38px var(--page-gutter) 30px; display: flex; flex-direction: column; justify-content: space-between; background: rgba(7, 7, 6, 0.5); }
 .footer-top, .footer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 24px; color: var(--muted); font: 10px ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.13em; }
