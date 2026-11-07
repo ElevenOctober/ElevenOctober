@@ -426,6 +426,38 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   brightStars.frustumCulled = false
   camera.add(stars)
   camera.add(brightStars)
+  const shootingStarLayer = new THREE.Group()
+  shootingStarLayer.position.z = -31.8
+  camera.add(shootingStarLayer)
+  const shootingStars = Array.from({ length: 3 }, (_, index) => {
+    const lineGeometry = new THREE.BufferGeometry()
+    lineGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3).setUsage(THREE.DynamicDrawUsage))
+    const lineMaterial = new THREE.LineBasicMaterial({ color: '#e9d9b5', transparent: true, opacity: 0, depthWrite: false, toneMapped: false })
+    const line = new THREE.Line(lineGeometry, lineMaterial)
+    line.frustumCulled = false
+    shootingStarLayer.add(line)
+
+    const headGeometry = new THREE.BufferGeometry()
+    headGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3), 3).setUsage(THREE.DynamicDrawUsage))
+    const headMaterial = new THREE.PointsMaterial({ color: '#fff8e8', size: 0.14, transparent: true, opacity: 0, sizeAttenuation: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false })
+    const head = new THREE.Points(headGeometry, headMaterial)
+    head.frustumCulled = false
+    shootingStarLayer.add(head)
+
+    return {
+      line,
+      lineMaterial,
+      head,
+      headMaterial,
+      startX: index === 0 ? 0.82 : index === 1 ? -0.8 : 0.28,
+      startY: index === 2 ? -0.62 : 0.82,
+      directionX: index === 1 ? 0.52 : -0.52,
+      directionY: index === 2 ? 0.38 : -0.38,
+      startAt: 1.2 + index * 4.6,
+      period: 12.4 + index * 2.1,
+      duration: 0.85,
+    }
+  })
   scene.add(camera)
   const fitStarField = () => {
     const height = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 32
@@ -433,6 +465,7 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     const scaleY = height / 2
     stars.scale.set(scaleX, scaleY, 1)
     brightStars.scale.set(scaleX, scaleY, 1)
+    shootingStarLayer.scale.set(scaleX, scaleY, 1)
   }
   fitStarField()
 
@@ -518,6 +551,23 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
       const angle = phase + (reducedMotion ? 0 : elapsed * speed)
       group.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0)
       group.rotation.z = angle + Math.PI * 0.5
+    })
+    shootingStars.forEach(({ line, lineMaterial, head, headMaterial, startX, startY, directionX, directionY, startAt, period, duration }) => {
+      const phase = ((elapsed - startAt) % period + period) % period
+      const opacity = reducedMotion || phase >= duration ? 0 : Math.sin((phase / duration) * Math.PI) * 0.92
+      lineMaterial.opacity = opacity * 0.72
+      headMaterial.opacity = opacity
+      if (!opacity) return
+      const progress = phase / duration
+      const headX = startX + directionX * progress
+      const headY = startY + directionY * progress
+      const positions = line.geometry.getAttribute('position') as THREE.BufferAttribute
+      positions.setXYZ(0, headX - directionX * 0.2, headY - directionY * 0.2, 0)
+      positions.setXYZ(1, headX, headY, 0)
+      positions.needsUpdate = true
+      const headPosition = head.geometry.getAttribute('position') as THREE.BufferAttribute
+      headPosition.setXYZ(0, headX, headY, 0)
+      headPosition.needsUpdate = true
     })
 
     const angle = Math.PI * 1.5 + intro * Math.PI * 2 + (reducedMotion ? 0 : elapsed * 0.12 + scrollProgress * 1.1)
