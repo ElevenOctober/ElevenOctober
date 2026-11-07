@@ -18,6 +18,60 @@ const poses: Pose[] = [
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))
 const lerp = (from: number, to: number, amount: number) => from + (to - from) * amount
+const fract = (value: number) => value - Math.floor(value)
+
+function cloudHash(x: number, y: number, z: number) {
+  x = fract(x * 0.3183099 + 0.1) * 17
+  y = fract(y * 0.3183099 + 0.1) * 17
+  z = fract(z * 0.3183099 + 0.1) * 17
+  return fract(x * y * z * (x + y + z))
+}
+
+function cloudNoise(x: number, y: number, z: number) {
+  const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z)
+  const fx = fract(x), fy = fract(y), fz = fract(z)
+  const u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy), w = fz * fz * (3 - 2 * fz)
+  const at = (dx: number, dy: number, dz: number) => cloudHash(ix + dx, iy + dy, iz + dz)
+  const z0 = lerp(lerp(at(0, 0, 0), at(1, 0, 0), u), lerp(at(0, 1, 0), at(1, 1, 0), u), v)
+  const z1 = lerp(lerp(at(0, 0, 1), at(1, 0, 1), u), lerp(at(0, 1, 1), at(1, 1, 1), u), v)
+  return lerp(z0, z1, w)
+}
+
+function cloudFieldAt(direction: THREE.Vector3, time: number) {
+  const yDrift = time * 0.014, zDrift = -time * 0.01
+  const broad = cloudNoise(direction.x * 3.4, direction.y * 3.4 + yDrift, direction.z * 3.4 + zDrift)
+  const wisps = cloudNoise(direction.x * 9, direction.y * 9 + yDrift * 1.8, direction.z * 9 + zDrift * 1.8)
+  return broad * 0.72 + wisps * 0.28
+}
+
+function stormCentersFor(facing: THREE.Vector3, time: number, cycle: number) {
+  const up = new THREE.Vector3(0, 1, 0)
+  const east = new THREE.Vector3().crossVectors(up, facing).normalize()
+  if (east.lengthSq() < 0.01) east.set(1, 0, 0)
+  const north = new THREE.Vector3().crossVectors(facing, east).normalize()
+  const candidate = new THREE.Vector3()
+
+  return Array.from({ length: 4 }, (_, storm) => {
+    let bestField = -1
+    const best = new THREE.Vector3()
+    for (let sample = 0; sample < 12; sample++) {
+      const seed = storm * 12 + sample
+      const angle = storm * Math.PI * 0.5 + (cloudHash(cycle, seed + 29, 13) - 0.5) * 1.3
+      const radius = 0.22 + cloudHash(cycle, seed + 43, 17) * 1.1
+      const sinRadius = Math.sin(radius)
+      candidate.copy(facing).multiplyScalar(Math.cos(radius))
+        .addScaledVector(east, Math.cos(angle) * sinRadius)
+        .addScaledVector(north, Math.sin(angle) * sinRadius)
+        .normalize()
+      const field = cloudFieldAt(candidate, time)
+      if (field > bestField) {
+        bestField = field
+        best.copy(candidate)
+      }
+    }
+    return best
+  })
+}
 
 function readStoryProgress(sections: HTMLElement[]) {
   const marker = window.scrollY + Math.min(120, window.innerHeight * 0.15)
@@ -65,7 +119,10 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   scene.add(system)
 
   const coreMaterial = new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 } },
+    uniforms: {
+      uTime: { value: 0 },
+      uStormCenters: { value: Array.from({ length: 4 }, () => new THREE.Vector3(0, 0, 1)) },
+    },
     vertexShader: `
       varying vec3 vNormal;
       varying vec3 vView;
@@ -80,6 +137,7 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     `,
     fragmentShader: `
       uniform float uTime;
+      uniform vec3 uStormCenters[4];
       varying vec3 vNormal;
       varying vec3 vView;
       varying vec3 vLocalPosition;
@@ -98,10 +156,10 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
           f.z
         );
       }
-      float segmentDistance(vec2 p, vec2 a, vec2 b) {
+      vec2 segmentDistance(vec2 p, vec2 a, vec2 b) {
         vec2 segment = b - a;
         float t = clamp(dot(p - a, segment) / max(dot(segment, segment), 0.00001), 0.0, 1.0);
-        return length(p - a - segment * t);
+        return vec2(length(p - a - segment * t), t);
       }
       void main() {
         float edge = pow(1.0 - max(dot(normalize(vNormal), normalize(vView)), 0.0), 4.2);
@@ -114,42 +172,66 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
         float clouds = cloudMask * 0.34;
         vec3 base = mix(vec3(0.008, 0.0075, 0.0068), vec3(0.09, 0.078, 0.064), clouds);
         vec3 rim = vec3(0.16, 0.135, 0.095) * edge * 0.38;
-        float strikeCycle = mod(uTime + 5.8, 6.6);
-        float strikeIndex = floor((uTime + 5.8) / 6.6);
-        float strikeFlash = max(
-          1.0 - smoothstep(0.035, 0.14, abs(strikeCycle - 0.035)),
-          0.58 * (1.0 - smoothstep(0.025, 0.09, abs(strikeCycle - 0.19)))
-        );
-        float centerLongitude = 1.5708 + (cloudHash(vec3(strikeIndex, 13.0, 7.0)) - 0.5) * 0.6;
-        float centerLatitude = (cloudHash(vec3(strikeIndex, 17.0, 9.0)) - 0.5) * 0.5;
-        float longitude = mod(atan(position.z, position.x) - centerLongitude + 3.14159, 6.28318) - 3.14159;
         float latitude = asin(clamp(position.y, -1.0, 1.0));
-        vec2 stormPoint = vec2(longitude * cos(latitude), latitude - centerLatitude);
-        float boltDistance = 1.0;
-        for (int i = 0; i < 8; i++) {
-          float segmentIndex = float(i);
-          float jitterA = (cloudHash(vec3(strikeIndex, segmentIndex, 31.0)) - 0.5) * 0.16;
-          float jitterB = (cloudHash(vec3(strikeIndex, segmentIndex + 1.0, 31.0)) - 0.5) * 0.16;
-          vec2 a = vec2(jitterA, 0.42 - segmentIndex * 0.105);
-          vec2 b = vec2(jitterB, 0.42 - (segmentIndex + 1.0) * 0.105);
-          boltDistance = min(boltDistance, segmentDistance(stormPoint, a, b));
+        float longitude = atan(position.z, position.x);
+        float cloudCharge = cloudMask;
+        float strikeIndex = floor((uTime + 5.8) / 6.6);
+        float strikeCycle = mod(uTime + 5.8, 6.6);
+        float strikeFlash = max(
+          1.0 - smoothstep(0.06, 0.27, abs(strikeCycle - 0.08)),
+          0.42 * (1.0 - smoothstep(0.03, 0.12, abs(strikeCycle - 0.4)))
+        );
+        float stormPulse = 0.0;
+        vec3 lightning = vec3(0.0);
+        for (int storm = 0; storm < 4; storm++) {
+          float stormSeed = float(storm);
+          vec3 stormCenter = normalize(uStormCenters[storm]);
+          float centerLongitude = atan(stormCenter.z, stormCenter.x);
+          float centerLatitude = asin(clamp(stormCenter.y, -1.0, 1.0));
+          float deltaLongitude = mod(longitude - centerLongitude + 3.14159, 6.28318) - 3.14159;
+          vec2 stormPoint = vec2(deltaLongitude * cos(centerLatitude), latitude - centerLatitude);
+          float boltDistance = 1.0;
+          float boltCore = 0.0;
+          for (int i = 0; i < 8; i++) {
+            float segmentIndex = float(i);
+            float nextIndex = segmentIndex + 1.0;
+            float jitterA = (cloudHash(vec3(strikeIndex, segmentIndex + stormSeed * 11.0, 31.0)) - 0.5) * 0.12 * abs(segmentIndex - 4.0) / 4.0;
+            float jitterB = (cloudHash(vec3(strikeIndex, nextIndex + stormSeed * 11.0, 31.0)) - 0.5) * 0.12 * abs(nextIndex - 4.0) / 4.0;
+            vec2 a = vec2(jitterA, 0.42 - segmentIndex * 0.105);
+            vec2 b = vec2(jitterB, 0.42 - nextIndex * 0.105);
+            float taperA = 1.0 - abs(segmentIndex / 4.0 - 1.0);
+            float taperB = 1.0 - abs(nextIndex / 4.0 - 1.0);
+            float radiusA = mix(0.00025, 0.0024, taperA);
+            float radiusB = mix(0.00025, 0.0024, taperB);
+            vec2 lineDistance = segmentDistance(stormPoint, a, b);
+            float lineRadius = mix(radiusA, radiusB, lineDistance.y);
+            boltCore = max(boltCore, 1.0 - smoothstep(lineRadius, lineRadius + 0.0025, lineDistance.x));
+            boltDistance = min(boltDistance, lineDistance.x);
+          }
+          float branchStart = 2.0 + floor(cloudHash(vec3(strikeIndex, stormSeed + 23.0, 13.0)) * 4.0);
+          float branchRootX = (cloudHash(vec3(strikeIndex, branchStart + stormSeed * 11.0, 31.0)) - 0.5) * 0.12;
+          float branchRootY = 0.42 - branchStart * 0.105;
+          float branchSide = cloudHash(vec3(strikeIndex, stormSeed + 29.0, 17.0)) > 0.5 ? 1.0 : -1.0;
+          float branchDirection = cloudHash(vec3(strikeIndex, stormSeed + 31.0, 19.0)) > 0.5 ? 1.0 : -1.0;
+          for (int i = 0; i < 3; i++) {
+            float segmentIndex = float(i);
+            float nextIndex = segmentIndex + 1.0;
+            float jitterA = segmentIndex == 0.0 ? 0.0 : (cloudHash(vec3(strikeIndex, segmentIndex + stormSeed * 7.0, 23.0)) - 0.5) * 0.04;
+            float jitterB = (cloudHash(vec3(strikeIndex, nextIndex + stormSeed * 7.0, 23.0)) - 0.5) * 0.04;
+            vec2 a = vec2(branchRootX + branchSide * segmentIndex * 0.055 + jitterA, branchRootY + branchDirection * segmentIndex * 0.045);
+            vec2 b = vec2(branchRootX + branchSide * nextIndex * 0.055 + jitterB, branchRootY + branchDirection * nextIndex * 0.045);
+            float radiusA = mix(0.0018, 0.0001, segmentIndex / 3.0);
+            float radiusB = mix(0.0018, 0.0001, nextIndex / 3.0);
+            vec2 lineDistance = segmentDistance(stormPoint, a, b);
+            float lineRadius = mix(radiusA, radiusB, lineDistance.y);
+            boltCore = max(boltCore, 1.0 - smoothstep(lineRadius, lineRadius + 0.0025, lineDistance.x));
+            boltDistance = min(boltDistance, lineDistance.x);
+          }
+          float boltGlow = exp(-boltDistance * 52.0) * 0.045;
+          stormPulse = max(stormPulse, strikeFlash);
+          lightning += vec3(0.62, 0.65, 0.66) * (boltCore * 0.12 + boltGlow * 0.08) * strikeFlash * cloudCharge;
         }
-        float branchRoot = (cloudHash(vec3(strikeIndex, 4.0, 31.0)) - 0.5) * 0.16;
-        float branchSide = cloudHash(vec3(strikeIndex, 5.0, 31.0)) > 0.5 ? 1.0 : -1.0;
-        for (int i = 0; i < 3; i++) {
-          float segmentIndex = float(i);
-          float nextIndex = segmentIndex + 1.0;
-          float jitterA = i == 0 ? 0.0 : (cloudHash(vec3(strikeIndex, segmentIndex + 4.0, 23.0)) - 0.5) * 0.07;
-          float jitterB = (cloudHash(vec3(strikeIndex, nextIndex + 4.0, 23.0)) - 0.5) * 0.07;
-          vec2 a = vec2(branchRoot + branchSide * segmentIndex * 0.085 + jitterA, -segmentIndex * 0.095);
-          vec2 b = vec2(branchRoot + branchSide * nextIndex * 0.085 + jitterB, -nextIndex * 0.095);
-          boltDistance = min(boltDistance, segmentDistance(stormPoint, a, b));
-        }
-        float cloudCharge = cloudMask * smoothstep(0.46, 0.6, cloudField);
-        float boltCore = 1.0 - smoothstep(0.001, 0.004, boltDistance);
-        float boltGlow = exp(-boltDistance * 65.0) * 0.08;
-        vec3 stormLight = vec3(0.025, 0.023, 0.02) * strikeFlash * cloudMask;
-        vec3 lightning = vec3(0.9, 0.88, 0.82) * (boltCore + boltGlow) * strikeFlash * cloudCharge;
+        vec3 stormLight = vec3(0.009, 0.009, 0.008) * stormPulse * cloudCharge;
         gl_FragColor = vec4((base + rim) * 1.13 + stormLight + lightning, 1.0);
       }
     `,
@@ -480,6 +562,8 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
   let frameId = 0
   let lastFrame = 0
   let startedAt = performance.now()
+  let strikeCycleIndex = -1
+  const stormOrientation = new THREE.Quaternion()
   let glow = 0.1
   let scrollProgress = 0
   let lost = false
@@ -525,7 +609,8 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     lastFrame = now
 
     const elapsed = (now - startedAt) / 1000
-    coreMaterial.uniforms.uTime.value = reducedMotion ? 0 : elapsed
+    const effectTime = reducedMotion ? 0 : elapsed
+    coreMaterial.uniforms.uTime.value = effectTime
     const intro = reducedMotion ? 1 : clamp(elapsed / 2.2, 0, 1)
     orbitLine.geometry.setDrawRange(0, Math.max(1, Math.floor(480 * intro)))
     glowMaterial.opacity = lerp(glowMaterial.opacity, 0.08 + glow * 0.12, 0.08)
@@ -545,6 +630,13 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     system.position.y = lerp(system.position.y, pose.y, 0.055)
     system.rotation.y = lerp(system.rotation.y, reducedMotion ? 0 : pose.rotation + pointerX * 0.035, 0.035)
     system.rotation.x = lerp(system.rotation.x, reducedMotion ? 0 : pointerY * 0.025, 0.035)
+    const nextStrikeCycle = Math.floor((effectTime + 5.8) / 6.6)
+    if (nextStrikeCycle !== strikeCycleIndex) {
+      system.getWorldQuaternion(stormOrientation)
+      const facing = camera.position.clone().sub(system.position).applyQuaternion(stormOrientation.invert()).normalize()
+      coreMaterial.uniforms.uStormCenters.value = stormCentersFor(facing, effectTime, nextStrikeCycle)
+      strikeCycleIndex = nextStrikeCycle
+    }
     dust.rotation.z = reducedMotion ? 0 : elapsed * 0.003
     debris.rotation.z = reducedMotion ? 0 : elapsed * 0.06
     spacecraftData.forEach(({ group, radius, phase, speed }) => {
