@@ -325,7 +325,7 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
     })
   }
   loadSpacecraft('/models/near-shoemaker.glb', 1.9, Math.PI * 0.5, 0.085, 0.3)
-  loadSpacecraft('/models/deep-space-1.glb', 2.1, Math.PI * 1.5, -0.06, 0.26)
+  loadSpacecraft('/models/deep-space-1.glb', 2.65, Math.PI * 1.5, -0.06, 0.26)
 
   scene.add(new THREE.AmbientLight('#b4aa96', 0.55))
   const rockLight = new THREE.DirectionalLight('#e9ddc4', 1.35)
