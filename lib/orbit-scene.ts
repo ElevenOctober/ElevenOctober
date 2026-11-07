@@ -98,6 +98,11 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
           f.z
         );
       }
+      float segmentDistance(vec2 p, vec2 a, vec2 b) {
+        vec2 segment = b - a;
+        float t = clamp(dot(p - a, segment) / max(dot(segment, segment), 0.00001), 0.0, 1.0);
+        return length(p - a - segment * t);
+      }
       void main() {
         float edge = pow(1.0 - max(dot(normalize(vNormal), normalize(vView)), 0.0), 4.2);
         vec3 position = normalize(vLocalPosition);
@@ -108,7 +113,43 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
         float clouds = smoothstep(0.44, 0.66, cloudField) * 0.34;
         vec3 base = mix(vec3(0.008, 0.0075, 0.0068), vec3(0.09, 0.078, 0.064), clouds);
         vec3 rim = vec3(0.16, 0.135, 0.095) * edge * 0.38;
-        gl_FragColor = vec4((base + rim) * 1.13, 1.0);
+        float strikeCycle = mod(uTime + 5.8, 6.6);
+        float strikeIndex = floor((uTime + 5.8) / 6.6);
+        float strikeFlash = max(
+          1.0 - smoothstep(0.035, 0.14, abs(strikeCycle - 0.035)),
+          0.58 * (1.0 - smoothstep(0.025, 0.09, abs(strikeCycle - 0.19)))
+        );
+        float centerLongitude = 1.5708 + (cloudHash(vec3(strikeIndex, 13.0, 7.0)) - 0.5) * 0.6;
+        float centerLatitude = (cloudHash(vec3(strikeIndex, 17.0, 9.0)) - 0.5) * 0.5;
+        float longitude = mod(atan(position.z, position.x) - centerLongitude + 3.14159, 6.28318) - 3.14159;
+        float latitude = asin(clamp(position.y, -1.0, 1.0));
+        vec2 stormPoint = vec2(longitude * cos(latitude), latitude - centerLatitude);
+        float boltDistance = 1.0;
+        for (int i = 0; i < 8; i++) {
+          float segmentIndex = float(i);
+          float jitterA = (cloudHash(vec3(strikeIndex, segmentIndex, 31.0)) - 0.5) * 0.16;
+          float jitterB = (cloudHash(vec3(strikeIndex, segmentIndex + 1.0, 31.0)) - 0.5) * 0.16;
+          vec2 a = vec2(jitterA, 0.42 - segmentIndex * 0.105);
+          vec2 b = vec2(jitterB, 0.42 - (segmentIndex + 1.0) * 0.105);
+          boltDistance = min(boltDistance, segmentDistance(stormPoint, a, b));
+        }
+        float branchRoot = (cloudHash(vec3(strikeIndex, 4.0, 31.0)) - 0.5) * 0.16;
+        float branchSide = cloudHash(vec3(strikeIndex, 5.0, 31.0)) > 0.5 ? 1.0 : -1.0;
+        for (int i = 0; i < 3; i++) {
+          float segmentIndex = float(i);
+          float nextIndex = segmentIndex + 1.0;
+          float jitterA = i == 0 ? 0.0 : (cloudHash(vec3(strikeIndex, segmentIndex + 4.0, 23.0)) - 0.5) * 0.07;
+          float jitterB = (cloudHash(vec3(strikeIndex, nextIndex + 4.0, 23.0)) - 0.5) * 0.07;
+          vec2 a = vec2(branchRoot + branchSide * segmentIndex * 0.085 + jitterA, -segmentIndex * 0.095);
+          vec2 b = vec2(branchRoot + branchSide * nextIndex * 0.085 + jitterB, -nextIndex * 0.095);
+          boltDistance = min(boltDistance, segmentDistance(stormPoint, a, b));
+        }
+        float cloudCharge = 0.55 + smoothstep(0.35, 0.58, cloudField) * 0.45;
+        float boltCore = 1.0 - smoothstep(0.005, 0.016, boltDistance);
+        float boltGlow = exp(-boltDistance * 26.0) * 0.22;
+        vec3 stormLight = vec3(0.055, 0.046, 0.034) * strikeFlash;
+        vec3 lightning = vec3(0.9, 0.84, 0.72) * (boltCore + boltGlow) * strikeFlash * cloudCharge;
+        gl_FragColor = vec4((base + rim) * 1.13 + stormLight + lightning, 1.0);
       }
     `,
   })
