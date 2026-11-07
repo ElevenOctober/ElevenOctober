@@ -13,7 +13,7 @@ const poses: Pose[] = [
   { x: -0.48, y: -0.05, z: 9, rotation: 0.48 },
   { x: -0.9, y: 0.04, z: 9.25, rotation: 0.62 },
   { x: -0.42, y: -0.2, z: 9.55, rotation: 0.78 },
-  { x: 0.15, y: -0.16, z: 10.4, rotation: 0.92 },
+  { x: 0.15, y: 1.16, z: 10.4, rotation: 0.92 },
 ]
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value))

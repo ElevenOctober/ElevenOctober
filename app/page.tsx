@@ -8,6 +8,7 @@ import { projects } from '@/content/projects'
 
 const github = 'https://github.com/ElevenOctober/ElevenOctober'
 const issues = github + '/issues'
+const joinForm = 'https://forms.gle/5FNnJKq7VhV3XC6h8'
 
 const disciplines = [
   'Electronics', 'Embedded systems', 'Firmware', 'Software', 'PCB design',
@@ -168,6 +169,7 @@ export default function Home() {
           <div className="join-actions" data-reveal>
             <a className="text-action" href={issues} target="_blank" rel="noreferrer">View open issues <span aria-hidden="true">↗</span></a>
             <a className="text-action" href={github} target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+            <a className="text-action" href={joinForm} target="_blank" rel="noreferrer">Join Us <span aria-hidden="true">↗</span></a>
           </div>
         </div>
       </section>
