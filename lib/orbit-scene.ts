@@ -108,7 +108,7 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
         float clouds = smoothstep(0.44, 0.66, cloudField) * 0.34;
         vec3 base = mix(vec3(0.008, 0.0075, 0.0068), vec3(0.09, 0.078, 0.064), clouds);
         vec3 rim = vec3(0.16, 0.135, 0.095) * edge * 0.38;
-        gl_FragColor = vec4(base + rim, 1.0);
+        gl_FragColor = vec4((base + rim) * 1.13, 1.0);
       }
     `,
   })
