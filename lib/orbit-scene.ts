@@ -110,7 +110,8 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
         float broadClouds = cloudNoise(position * 3.4 + drift);
         float cloudWisps = cloudNoise(position * 9.0 + drift * 1.8);
         float cloudField = broadClouds * 0.72 + cloudWisps * 0.28;
-        float clouds = smoothstep(0.44, 0.66, cloudField) * 0.34;
+        float cloudMask = smoothstep(0.44, 0.66, cloudField);
+        float clouds = cloudMask * 0.34;
         vec3 base = mix(vec3(0.008, 0.0075, 0.0068), vec3(0.09, 0.078, 0.064), clouds);
         vec3 rim = vec3(0.16, 0.135, 0.095) * edge * 0.38;
         float strikeCycle = mod(uTime + 5.8, 6.6);
@@ -144,11 +145,11 @@ export function mountOrbitScene(canvas: HTMLCanvasElement, shell: HTMLDivElement
           vec2 b = vec2(branchRoot + branchSide * nextIndex * 0.085 + jitterB, -nextIndex * 0.095);
           boltDistance = min(boltDistance, segmentDistance(stormPoint, a, b));
         }
-        float cloudCharge = 0.55 + smoothstep(0.35, 0.58, cloudField) * 0.45;
-        float boltCore = 1.0 - smoothstep(0.005, 0.016, boltDistance);
-        float boltGlow = exp(-boltDistance * 26.0) * 0.22;
-        vec3 stormLight = vec3(0.055, 0.046, 0.034) * strikeFlash;
-        vec3 lightning = vec3(0.9, 0.84, 0.72) * (boltCore + boltGlow) * strikeFlash * cloudCharge;
+        float cloudCharge = cloudMask * smoothstep(0.46, 0.6, cloudField);
+        float boltCore = 1.0 - smoothstep(0.001, 0.004, boltDistance);
+        float boltGlow = exp(-boltDistance * 65.0) * 0.08;
+        vec3 stormLight = vec3(0.025, 0.023, 0.02) * strikeFlash * cloudMask;
+        vec3 lightning = vec3(0.9, 0.88, 0.82) * (boltCore + boltGlow) * strikeFlash * cloudCharge;
         gl_FragColor = vec4((base + rim) * 1.13 + stormLight + lightning, 1.0);
       }
     `,
