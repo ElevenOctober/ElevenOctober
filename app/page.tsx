@@ -181,22 +181,24 @@ export default function Home() {
       </section>
 
       <footer className="site-footer" data-scene-index="8">
-        <div className="engineering-marquee" role="group" aria-label="Engineering disciplines">
-          <div className="engineering-marquee__track" aria-hidden="true">
-            {[0, 1].map((copy) => (
-              <div className="engineering-marquee__set" key={copy}>
-                {engineeringFields.map(([code, field]) => (
-                  <span className="engineering-marquee__item" key={code}>
-                    <span className="engineering-marquee__mark">{code}</span>{field}
-                  </span>
-                ))}
-              </div>
-            ))}
-          </div>
-          <span className="visually-hidden">{engineeringFields.map(([, field]) => field).join(', ')}</span>
-        </div>
         <div className="footer-top"><a className="footer-index" href="#home">BACK TO ARRIVAL ↑</a><span>AN OPEN ENGINEERING COLLECTIVE</span></div>
-        <p>11 OCTOBER</p>
+        <div className="footer-wordmark">
+          <p>11 OCTOBER</p>
+          <div className="engineering-marquee" role="group" aria-label="Engineering disciplines">
+            <div className="engineering-marquee__track" aria-hidden="true">
+              {[0, 1].map((copy) => (
+                <div className="engineering-marquee__set" key={copy}>
+                  {engineeringFields.map(([code, field]) => (
+                    <span className="engineering-marquee__item" key={code}>
+                      <span className="engineering-marquee__mark">{code}</span>{field}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <span className="visually-hidden">{engineeringFields.map(([, field]) => field).join(', ')}</span>
+          </div>
+        </div>
         <div className="footer-bottom"><span>REAL PROBLEMS. OPEN ENGINEERING.</span><a href="#home">RETURN TO THE ORBIT ↑</a></div>
       </footer>
     </main>
