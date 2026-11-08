@@ -6,8 +6,8 @@ import SiteHeader from '@/components/site-header'
 import { problems } from '@/content/problems'
 import { projects } from '@/content/projects'
 
-const github = 'https://github.com/ElevenOctober/ElevenOctober'
-const issues = github + '/issues'
+const github = 'https://github.com/ElevenOctober'
+const issues = github + '/ElevenOctober/issues'
 const joinForm = 'https://forms.gle/5FNnJKq7VhV3XC6h8'
 
 const disciplines = [
