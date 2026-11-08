@@ -43,21 +43,90 @@ export function SceneReadout() {
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false)
+  const [musicPlaying, setMusicPlaying] = useState(false)
   const dialog = useRef<HTMLDialogElement>(null)
+  const music = useRef<HTMLAudioElement>(null)
+  const fadeFrame = useRef<number | null>(null)
 
   useEffect(() => {
     if (open && !dialog.current?.open) dialog.current?.showModal()
     if (!open && dialog.current?.open) dialog.current.close()
   }, [open])
 
+  useEffect(() => {
+    const player = music.current
+    if (!player) return
+    let disposed = false
+
+    const cancelFade = () => {
+      if (fadeFrame.current !== null) cancelAnimationFrame(fadeFrame.current)
+      fadeFrame.current = null
+    }
+    const onPlay = () => {
+      setMusicPlaying(true)
+      cancelFade()
+      const from = player.volume
+      if (from >= 0.5) return
+      const duration = ((0.5 - from) / 0.5) * 5000
+      const startedAt = performance.now()
+      const tick: FrameRequestCallback = (now) => {
+        if (disposed || player.paused) return
+        const progress = Math.max(0, Math.min((now - startedAt) / duration, 1))
+        player.volume = from + (0.5 - from) * progress
+        if (progress < 1) fadeFrame.current = requestAnimationFrame(tick)
+        else fadeFrame.current = null
+      }
+      fadeFrame.current = requestAnimationFrame(tick)
+    }
+    const onPause = () => {
+      cancelFade()
+      if (!disposed) setMusicPlaying(false)
+    }
+    const unlockAudio = (event: Event) => {
+      window.removeEventListener('pointerdown', unlockAudio)
+      window.removeEventListener('keydown', unlockAudio)
+      if (event.target instanceof Element && event.target.closest('.sound-toggle')) return
+      if (player.paused) void player.play().catch(() => {})
+    }
+
+    player.volume = 0
+    player.addEventListener('play', onPlay)
+    player.addEventListener('pause', onPause)
+    window.addEventListener('pointerdown', unlockAudio, { once: true })
+    window.addEventListener('keydown', unlockAudio, { once: true })
+    void player.play().catch(() => {})
+    return () => {
+      disposed = true
+      cancelFade()
+      window.removeEventListener('pointerdown', unlockAudio)
+      window.removeEventListener('keydown', unlockAudio)
+      player.removeEventListener('play', onPlay)
+      player.removeEventListener('pause', onPause)
+      player.pause()
+    }
+  }, [])
+
+  const toggleMusic = () => {
+    const player = music.current
+    if (!player) return
+    if (player.paused) void player.play().catch(() => setMusicPlaying(false))
+    else player.pause()
+  }
+
   return (
     <>
       <a className="skip-link" href="#about">Skip intro</a>
       <header className="site-header">
         <a className="wordmark" href="#home" aria-label="11 October, home">11 OCTOBER</a>
-        <button className="index-trigger" type="button" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
-          INDEX <span aria-hidden="true">+</span>
-        </button>
+        <audio ref={music} src="/backgroundMusic/11October%20BG.mp4" preload="auto" loop hidden />
+        <div className="site-header__actions">
+          <button className="sound-toggle" type="button" aria-pressed={musicPlaying} aria-label={musicPlaying ? 'Pause background music' : 'Play background music'} onClick={toggleMusic}>
+            <span className="sound-toggle__lamp" aria-hidden="true" />SOUND {musicPlaying ? 'ON' : 'OFF'}
+          </button>
+          <button className="index-trigger" type="button" aria-haspopup="dialog" aria-expanded={open} onClick={() => setOpen(true)}>
+            INDEX <span aria-hidden="true">+</span>
+          </button>
+        </div>
       </header>
       <SceneReadout />
       <dialog className="index-dialog" ref={dialog} aria-label="Site index" onClose={() => setOpen(false)} onClick={(event) => {

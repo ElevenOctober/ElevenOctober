@@ -46,6 +46,11 @@ main::after { content: ""; position: fixed; z-index: 20; inset: 0; pointer-event
 .site-header, .document-header { position: fixed; z-index: 30; top: 0; left: 0; width: 100%; padding: 25px var(--page-gutter); display: flex; justify-content: space-between; align-items: center; }
 .site-header::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(5, 5, 5, 0.78); }
 .wordmark, .index-trigger { color: var(--ink); text-decoration: none; font-size: 13px; font-weight: 500; letter-spacing: 0.19em; }
+.site-header__actions { display: flex; align-items: center; gap: clamp(14px, 2vw, 28px); }
+.sound-toggle { display: inline-flex; align-items: center; gap: 8px; padding: 8px 0; border: 0; background: transparent; color: var(--muted); font: 9px ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.14em; white-space: nowrap; cursor: pointer; }
+.sound-toggle:hover { color: var(--ink); }
+.sound-toggle__lamp { width: 5px; height: 5px; border: 1px solid var(--quiet); border-radius: 50%; transition: background 240ms ease, box-shadow 240ms ease; }
+.sound-toggle[aria-pressed="true"] .sound-toggle__lamp { border-color: var(--orbit); background: var(--orbit); box-shadow: 0 0 9px rgba(213, 201, 173, 0.55); }
 .index-trigger { border: 0; padding: 8px 0 8px 12px; background: transparent; cursor: pointer; }
 .index-trigger span { display: inline-block; margin-left: 14px; color: var(--orbit); transition: transform 240ms var(--ease-out); }
 .index-trigger:hover span { transform: rotate(45deg); }
@@ -226,6 +231,7 @@ main::after { content: ""; position: fixed; z-index: 20; inset: 0; pointer-event
 @media (max-width: 560px) {
   body { font-size: 16px; }
   .site-header, .document-header { padding-top: 19px; padding-bottom: 19px; }
+  .sound-toggle { gap: 6px; font-size: 8px; }
   .story-section { min-height: auto; padding: 118px var(--page-gutter); }
   .hero { min-height: 100svh; align-items: center; padding-top: 90px; padding-bottom: 80px; }
   .orbit-section { min-height: 100svh; }
