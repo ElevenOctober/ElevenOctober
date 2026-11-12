@@ -81,7 +81,7 @@ export default function Home() {
           </div>
           <div className="empty-state" data-reveal>
             <span className="status-point" aria-hidden="true" />
-            <p>{problems.length === 0 ? 'FIRST PROBLEMS / COMING SOON' : problems.length + ' PROBLEMS PUBLISHED'}</p>
+            <p>{problems.length === 0 ? 'FIRST PROBLEMS / COMING SOON' : `${problems.length} ${problems.length === 1 ? 'PROBLEM' : 'PROBLEMS'} PUBLISHED`}</p>
             <span>Only verified, externally sourced problems appear here.</span>
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function Home() {
           </div>
           <div className="solutions-copy" data-reveal>
             <p>A project becomes part of the public record after its prototype, validation, limitations, repository, and contributors are documented.</p>
-            <p>{projects.length === 0 ? 'No completed projects have been published yet.' : projects.length + ' projects are in the public record.'} New orbits will be drawn from published project data, not placeholders.</p>
+            <p>{projects.length === 0 ? 'No completed projects have been published yet.' : `${projects.length} ${projects.length === 1 ? 'project is' : 'projects are'} in the public record.`} New orbits will be drawn from published project data, not placeholders.</p>
             <Link className="text-action" href="/projects">Explore solutions <span aria-hidden="true">↗</span></Link>
           </div>
           <div className="solution-status" aria-label="Project publication status">
