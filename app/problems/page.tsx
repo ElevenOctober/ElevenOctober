@@ -5,7 +5,7 @@ import { problems } from '@/content/problems'
 
 export const metadata: Metadata = {
   title: 'Problems',
-  description: 'Externally sourced engineering problems under investigation by 11 October.',
+  description: 'Externally sourced engineering problems and their documented outcomes.',
 }
 
 export default function ProblemsIndex() {

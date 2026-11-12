@@ -1,0 +1,48 @@
+export const article = {
+  title: 'The Pico W Wi-Fi proposal and the fix that followed',
+  summary: 'A record of the proposal to expose connected access-point details on Raspberry Pi Pico W, its reported checks, and the later upstream fix that addressed the issue.',
+  category: 'OPEN SOURCE / EMBEDDED SYSTEMS',
+  publishedAt: '2026-11-12',
+  readingMinutes: 4,
+  authors: [{ name: '11 October' }],
+  contributors: [
+    { name: 'Shantanu (proposal PR #11625)', profile: 'https://github.com/shaxntanu' },
+    { name: 'Mikey Sklar (merged upstream PR #11646)', profile: 'https://github.com/mikeysklar' },
+  ],
+  problemId: '11O-001',
+  projectId: '11O-001',
+  repository: 'https://github.com/ElevenOctober/11O-001-circuitpythonPicoWifi',
+  sources: [
+    { title: 'Project engineering record', url: 'https://github.com/ElevenOctober/11O-001-circuitpythonPicoWifi' },
+    { title: 'CircuitPython issue #9323', url: 'https://github.com/adafruit/circuitpython/issues/9323' },
+    { title: 'CircuitPython issue #11030', url: 'https://github.com/adafruit/circuitpython/issues/11030' },
+    { title: 'Original proposal PR #11625', url: 'https://github.com/adafruit/circuitpython/pull/11625' },
+    { title: 'Merged upstream PR #11646', url: 'https://github.com/adafruit/circuitpython/pull/11646' },
+    { title: 'Testing record', url: 'https://github.com/ElevenOctober/11O-001-circuitpythonPicoWifi/blob/main/docs/TESTING.md' },
+  ],
+  revisions: [],
+}
+
+# The missing API
+
+CircuitPython issue [#9323](https://github.com/adafruit/circuitpython/issues/9323) reported that `wifi.radio.ap_info` raised `NotImplementedError` on Raspberry Pi Pico W. Without it, applications could not inspect details of the connected access point. A later report, [issue #11030](https://github.com/adafruit/circuitpython/issues/11030), identified missing RSSI support on Pico 2 W.
+
+## The proposal
+
+Shantanu opened [PR #11625](https://github.com/adafruit/circuitpython/pull/11625) on 2026-10-18. The proposal saved the authentication mode after a successful connection and combined the connected SSID with BSSID, RSSI, and channel values from the CYW43 driver. The patch changed `Radio.c` and `Radio.h` in CircuitPython's Raspberry Pi common HAL.
+
+PR #11625 closed without merge. Its proposed patch and the later upstream patch are preserved in the [11 October project repository](https://github.com/ElevenOctober/11O-001-circuitpythonPicoWifi).
+
+## The upstream fix
+
+[PR #11646](https://github.com/adafruit/circuitpython/pull/11646), authored by Mikey Sklar, merged on 2026-10-25 and closed issue #9323. Its description credits PR #11625 for taking the same approach. The merged PR also fixed the IP address returned immediately after switching networks and changed the default value of `wifi.Network.country`.
+
+These are related but distinct contributions: Shantanu did not author PR #11646, and PR #11625 was not merged.
+
+## Verification and limits
+
+The original PR description reports that `make -C mpy-cross -j4`, `git diff --check`, and pre-commit checks for whitespace and codespell passed. Translation checks and formatting did not run because their tools were unavailable. A Pico 2 W firmware build was blocked by a GCC version mismatch, and hardware testing was unavailable because no board or serial device was attached. These checks are reports from the original PR, not runs performed while preparing this article.
+
+The author of PR #11646 reported board-farm tests for Pico W and Pico 2 W, including network smoke tests, `ap_info` on home, open, and WPA2 networks, and reconnect behavior. Eleven October did not independently reproduce those results. WPA3, enterprise authentication, and roaming were not tested.
+
+The CircuitPython source remains in the [official Adafruit repository](https://github.com/adafruit/circuitpython). The 11 October repository is an engineering record containing documentation and patches.
