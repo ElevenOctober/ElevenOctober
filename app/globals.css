@@ -179,6 +179,16 @@ main::after { content: ""; position: fixed; z-index: 20; inset: 0; pointer-event
 .publication-meta { color: var(--muted); font: 11px ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.12em; }
 .publication-title { font-size: clamp(22px, 3vw, 38px); line-height: 1.2; }
 .publication-summary { max-width: 64ch; color: var(--muted); font-size: 15px; }
+.contribution-section { margin-top: 96px; }
+.contribution-heading { margin: 22px 0 0; font-size: clamp(30px, 4vw, 46px); line-height: 1.1; font-weight: 350; letter-spacing: -0.035em; }
+.contribution-list { margin-top: 34px; }
+.contribution-card { display: grid; gap: 18px; padding: 24px 0; }
+.contribution-heading-group { display: grid; gap: 10px; }
+.contribution-facts { display: flex; flex-wrap: wrap; gap: 9px 28px; color: var(--muted); font-size: 13px; }
+.contribution-facts p { display: flex; flex-wrap: wrap; gap: 9px; margin: 0; }
+.contribution-facts p > span { color: var(--ink); font: 10px ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.12em; }
+.contribution-links { display: flex; flex-wrap: wrap; gap: 12px 28px; }
+.contribution-links .text-action { font-size: 10px; }
 .document-back { margin-top: 45px; }
 .document-footer { display: flex; justify-content: space-between; gap: 20px; padding: 26px 0 34px; color: var(--muted); font: 10px ui-monospace, "SFMono-Regular", Consolas, monospace; letter-spacing: 0.13em; }
 .detail-page { max-width: 880px; }
